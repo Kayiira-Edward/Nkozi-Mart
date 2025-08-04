@@ -10,7 +10,7 @@ import { FaPlusCircle } from 'react-icons/fa';
 import { auth, db } from '@/app/firebase/config';
 import ProductForm from '@/app/components/seller/ProductForm';
 import ProductList from '@/app/components/seller/ProductList';
-import Header from '@/app/components/Header'; // Assuming you have a Header component
+// The Header component was causing a build error. It has been removed.
 
 export default function SellerDashboardPage() {
   const [products, setProducts] = useState([]);
@@ -27,6 +27,7 @@ export default function SellerDashboardPage() {
         setUser(authUser);
         setLoading(false);
       } else {
+        // Redirect to login page if user is not authenticated
         router.push('/auth/login');
       }
     });
@@ -74,7 +75,7 @@ export default function SellerDashboardPage() {
 
   return (
     <div className="bg-[#F0F2F5] min-h-screen font-sans">
-      <Header />
+      {/* The Header component call has been removed to fix the build error */}
       <div className="container px-4 py-8 mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Your Products</h1>
