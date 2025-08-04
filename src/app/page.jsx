@@ -54,8 +54,6 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isDataFetched, setIsDataFetched] = useState(false); // New state to track data fetching
   const searchInputRef = useRef(null);
 
   // Function to shuffle an array to create a dynamic feed
@@ -83,8 +81,6 @@ export default function HomePage() {
     // Ensure Firestore is initialized before fetching
     if (!db) {
       console.error("Firestore is not initialized.");
-      // Set a timer to end the loading state even if data fetching fails
-      setTimeout(() => setLoading(false), 3000);
       return;
     }
 
@@ -97,26 +93,13 @@ export default function HomePage() {
       
       // Shuffle the products to create a dynamic feed
       setProducts(shuffleArray(fetchedProducts));
-      setIsDataFetched(true); // Mark data as fetched
     }, (error) => {
       console.error("Error fetching products from Firestore: ", error);
-      // Even on error, we mark the data as fetched to stop the loader after the timeout
-      setIsDataFetched(true);
     });
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
   }, []);
-
-  // New useEffect to handle the 3-second loading delay
-  useEffect(() => {
-    if (isDataFetched) {
-      const timer = setTimeout(() => {
-        setLoading(false);
-      }, 3000); // 3-second delay
-      return () => clearTimeout(timer); // Clean up the timer
-    }
-  }, [isDataFetched]);
 
   const handleSellerClick = (sellerName, sellerId) => {
     console.log(`Navigating to seller profile: ${sellerName} (ID: ${sellerId})`);
@@ -146,23 +129,6 @@ export default function HomePage() {
         product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
         (product.sellerName && product.sellerName.toLowerCase().includes(lowerCaseSearchTerm)) ||
         (product.color && product.color.toLowerCase().includes(lowerCaseSearchTerm))
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen text-green-600 bg-white">
-        <img
-          src="/logo.png"
-          alt="ShopLink Logo"
-          className="w-20 h-20 mb-4 animate-bounce"
-        />
-        <h1 className="mb-2 text-3xl font-bold">ShopLink</h1>
-        <p className="text-lg font-medium">Bringing Local Shops Closer</p>
-        <span className="mt-4 text-sm text-gray-400 animate-pulse">
-          Loading amazing products...
-        </span>
-      </div>
     );
   }
   
