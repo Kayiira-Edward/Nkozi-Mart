@@ -158,13 +158,13 @@ export default function HomePage() {
             About
           </Link>
           <Link
-            href="/auth?mode=login"
+            href="/auth/register"
             className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
           >
             Become a Seller
           </Link>
           <Link
-            href="/auth?mode=login"
+            href="/auth/login"
             className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
           >
             Sign In
@@ -218,13 +218,13 @@ export default function HomePage() {
               About
             </Link>
             <Link
-              href="/become-seller"
+              href="/auth/register"
               className="w-full px-3 py-2 text-lg font-semibold text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
             >
               Become a Seller
             </Link>
             <Link
-              href="/auth?mode=login"
+              href="/auth/login"
               className="w-full px-3 py-2 text-lg font-semibold text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
             >
               Sign In
