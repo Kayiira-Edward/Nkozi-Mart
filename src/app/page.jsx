@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -56,6 +55,7 @@ export default function HomePage() {
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDataFetched, setIsDataFetched] = useState(false); // New state to track data fetching
   const searchInputRef = useRef(null);
 
   // Function to shuffle an array to create a dynamic feed
@@ -83,7 +83,8 @@ export default function HomePage() {
     // Ensure Firestore is initialized before fetching
     if (!db) {
       console.error("Firestore is not initialized.");
-      setLoading(false);
+      // Set a timer to end the loading state even if data fetching fails
+      setTimeout(() => setLoading(false), 3000);
       return;
     }
 
@@ -96,15 +97,26 @@ export default function HomePage() {
       
       // Shuffle the products to create a dynamic feed
       setProducts(shuffleArray(fetchedProducts));
-      setLoading(false);
+      setIsDataFetched(true); // Mark data as fetched
     }, (error) => {
       console.error("Error fetching products from Firestore: ", error);
-      setLoading(false);
+      // Even on error, we mark the data as fetched to stop the loader after the timeout
+      setIsDataFetched(true);
     });
 
     // Clean up the listener when the component unmounts
     return () => unsubscribe();
   }, []);
+
+  // New useEffect to handle the 3-second loading delay
+  useEffect(() => {
+    if (isDataFetched) {
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 3000); // 3-second delay
+      return () => clearTimeout(timer); // Clean up the timer
+    }
+  }, [isDataFetched]);
 
   const handleSellerClick = (sellerName, sellerId) => {
     console.log(`Navigating to seller profile: ${sellerName} (ID: ${sellerId})`);

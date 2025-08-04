@@ -1,9 +1,12 @@
-// src/app/store/[storeId]/page.jsx
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
-import ProfileDisplay from "../../components/seller/ProfileDisplay";
-import ProductList from "../../components/seller/ProductList";
+import { doc, collection, query, where, onSnapshot } from "firebase/firestore";
+import ProfileDisplay from "@/app/components/seller/ProfileDisplay";
+import ProductList from "@/app/components/seller/ProductList";
+
+// Import the shared Firebase instances
+import { db } from '@/app/firebase/config';
 
 export default function PublicStorePage({ params }) {
   const { storeId } = params;
@@ -19,34 +22,45 @@ export default function PublicStorePage({ params }) {
       return;
     }
     
-    const fetchStoreData = async () => {
-      try {
-        // This is a simulation; in a real app, you would fetch from an API
-        const savedProfile = JSON.parse(localStorage.getItem("sellerProfile"));
-        const savedProducts = JSON.parse(localStorage.getItem("sellerProducts"));
-
-        if (savedProfile) {
-          setSellerProfile(savedProfile);
-          if (savedProducts) {
-            setProducts(savedProducts);
-          }
-        } else {
-          setError("Profile not found.");
-        }
-      } catch (e) {
-        setError("Failed to load profile data.");
-      } finally {
-        setIsLoading(false);
+    // Set up a real-time listener for the seller's profile
+    const profileRef = doc(db, "sellers", storeId);
+    const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSellerProfile(docSnap.data());
+      } else {
+        setError("Seller profile not found.");
+        setSellerProfile(null);
       }
-    };
+      setIsLoading(false);
+    }, (e) => {
+      console.error("Error fetching seller profile:", e);
+      setError("Failed to load seller profile.");
+      setIsLoading(false);
+    });
 
-    fetchStoreData();
+    // Set up a real-time listener for the seller's products
+    const productsQuery = query(collection(db, "products"), where("sellerId", "==", storeId));
+    const unsubscribeProducts = onSnapshot(productsQuery, (querySnapshot) => {
+      const productsData = [];
+      querySnapshot.forEach((doc) => {
+        productsData.push({ id: doc.id, ...doc.data() });
+      });
+      setProducts(productsData);
+    }, (e) => {
+      console.error("Error fetching products:", e);
+      // Don't set error here, as the profile might still be loading correctly
+    });
+    
+    return () => {
+      unsubscribeProfile();
+      unsubscribeProducts();
+    };
   }, [storeId]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6 font-sans bg-gray-50">
-        <div className="text-xl font-medium text-gray-500">Loading store profile...</div>
+        <div className="text-xl font-medium text-gray-500">Loading store...</div>
       </div>
     );
   }

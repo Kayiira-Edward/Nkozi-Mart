@@ -1,25 +1,36 @@
-// seller/share/page.jsx
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { QRCodeSVG } from 'qrcode.react';
+import { onAuthStateChanged } from "firebase/auth";
+
+// Import the shared Firebase instance
+import { auth } from '@/app/firebase/config';
 
 export default function SharePage() {
   const [shareLink, setShareLink] = useState("");
   const [sellerId, setSellerId] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    // In a real application, you would fetch the sellerId from
-    // your authentication state or a backend API.
-    const fetchedSellerId = "brin-mart-12345";
-    setSellerId(fetchedSellerId);
-    if (fetchedSellerId) {
-      // Construct the shareable URL for the NEW public store page
-      const currentOrigin = window.location.origin;
-      const link = `${currentOrigin}/store/${fetchedSellerId}`; // Note the change from /seller/ to /store/
-      setShareLink(link);
-    }
-  }, []);
+    // Set up an authentication state listener
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setSellerId(user.uid);
+        // Construct the shareable URL for the NEW public store page
+        const currentOrigin = window.location.origin;
+        const link = `${currentOrigin}/store/${user.uid}`;
+        setShareLink(link);
+      } else {
+        // Redirect to login if no user is signed in
+        router.push('/auth/login');
+      }
+    });
+
+    // Cleanup the subscription on unmount
+    return () => unsubscribe();
+  }, [router]);
 
   if (!sellerId) {
     return (
@@ -30,7 +41,10 @@ export default function SharePage() {
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(shareLink);
+    // Fallback for clipboard API might be needed, but this is the standard
+    navigator.clipboard.writeText(shareLink)
+      .then(() => console.log("Link copied to clipboard!"))
+      .catch((err) => console.error("Failed to copy link: ", err));
   };
 
   return (

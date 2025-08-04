@@ -1,69 +1,102 @@
-// app/seller/manage-products/page.jsx
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import ProductCard from "../../components/seller/ProductCard";
-import ProductForm from "../../components/seller/ProductForm";
-import Modal from "../../components/Modal";
-import { Plus } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Plus } from 'lucide-react';
+
+// Import shared Firebase instances and components
+import { auth, db } from '@/app/firebase/config';
+import ProductCard from '@/app/components/seller/ProductCard';
+import ProductForm from '@/app/components/seller/ProductForm';
+import Modal from '@/app/components/Modal';
 
 export default function ManageProductsPage() {
+  const [user, setUser] = useState(null);
   const [products, setProducts] = useState([]);
+  const [sellerProfile, setSellerProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const router = useRouter();
 
-  // Load products from local storage on component mount
+  // Handle Authentication State
   useEffect(() => {
-    const savedProducts = JSON.parse(localStorage.getItem("sellerProducts")) || [];
-    setProducts(savedProducts);
-  }, []);
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+        setLoading(false);
+      } else {
+        router.push('/auth/login');
+      }
+    });
 
-  // Save products to local storage whenever the products state changes
+    return () => unsubscribeAuth();
+  }, [router]);
+
+  // Fetch products and profile in real-time
   useEffect(() => {
-    localStorage.setItem("sellerProducts", JSON.stringify(products));
-  }, [products]);
+    if (!user) return;
 
-  const handleAddProduct = (newProduct) => {
-    setProducts((prev) => [...prev, newProduct]);
+    // Set up real-time listener for seller's profile
+    const profileRef = doc(db, "sellers", user.uid);
+    const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSellerProfile(docSnap.data());
+      }
+    }, (error) => {
+      console.error("Error fetching seller profile:", error);
+    });
+
+    // Set up real-time listener for products
+    const productsQuery = query(collection(db, 'products'), where('sellerId', '==', user.uid));
+    const unsubscribeProducts = onSnapshot(productsQuery, (querySnapshot) => {
+      const productsArray = [];
+      querySnapshot.forEach((doc) => {
+        productsArray.push({ id: doc.id, ...doc.data() });
+      });
+      setProducts(productsArray);
+    }, (error) => {
+      console.error('Error fetching products: ', error);
+    });
+
+    return () => {
+      unsubscribeProfile();
+      unsubscribeProducts();
+    };
+  }, [user]);
+
+  const handleFormSubmitted = () => {
     setIsModalOpen(false);
-  };
-
-  const handleUpdateProduct = (updatedProduct) => {
-    setProducts((prev) => 
-      prev.map(p => (p.id === updatedProduct.id ? updatedProduct : p))
-    );
     setIsEditModalOpen(false);
     setEditingProduct(null);
-  };
-
-  const handleDeleteProduct = (productId) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      setProducts((prev) => prev.filter(p => p.id !== productId));
-    }
   };
 
   const handleEditProduct = (product) => {
     setEditingProduct(product);
     setIsEditModalOpen(true);
   };
-  
-  // NOTE: You'll also need to get the seller's whatsapp number to pass to the ProductCard
-  // This is a placeholder for now
-  const [sellerProfile, setSellerProfile] = useState(null);
-  useEffect(() => {
-    const savedProfile = JSON.parse(localStorage.getItem("sellerProfile"));
-    if (savedProfile) {
-      setSellerProfile(savedProfile);
-    }
-  }, []);
+
+  const handleDeleteProduct = (productId) => {
+    // The ProductCard component now handles its own deletion logic, so no action is needed here.
+    // The onSnapshot listener will automatically update the product list after deletion.
+  };
+
+  if (loading || !user) {
+    return <div className="flex items-center justify-center min-h-screen text-lg text-gray-600">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#F6F7F9] p-6 font-sans antialiased">
       <header className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-[#2C3E50]">Manage Products</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingProduct(null); // Ensure no old data is in the form
+            setIsModalOpen(true);
+          }}
           className="flex items-center px-6 py-3 text-white bg-[#5CB85C] rounded-full shadow-lg hover:bg-[#4CAF50] transition-colors duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#5CB85C] focus:ring-opacity-50"
         >
           <Plus className="w-5 h-5 mr-2" />
@@ -83,7 +116,7 @@ export default function ManageProductsPage() {
               product={product} 
               whatsapp={sellerProfile?.whatsapp}
               onEdit={handleEditProduct}
-              onDelete={handleDeleteProduct}
+              onDelete={handleDeleteProduct} // The `ProductCard` now handles the actual deletion
             />
           ))}
         </div>
@@ -91,12 +124,12 @@ export default function ManageProductsPage() {
 
       {/* Add Product Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <ProductForm onSubmit={handleAddProduct} />
+        <ProductForm onSubmit={handleFormSubmitted} />
       </Modal>
 
       {/* Edit Product Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
-        <ProductForm onSubmit={handleUpdateProduct} initialData={editingProduct} />
+        <ProductForm onSubmit={handleFormSubmitted} initialData={editingProduct} />
       </Modal>
     </div>
   );

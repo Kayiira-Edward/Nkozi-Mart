@@ -1,56 +1,119 @@
-// components/seller/ProfileDisplay.jsx
-"use client";
+'use client';
 
-import Image from "next/image";
+import { useState, useEffect } from 'react';
+import { doc, updateDoc } from 'firebase/firestore';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
-export default function ProfileDisplay({ profile }) {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-6">
-        {/* Profile Image Display */}
-        {profile.profileImage ? (
-          <div className="relative w-24 h-24 overflow-hidden rounded-full">
-            <Image
-              src={profile.profileImage}
-              alt="Profile"
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              style={{ objectFit: "cover" }}
+// Import shared Firebase instances
+import { db, auth } from '@/app/firebase/config';
+import ToastNotification from "../ToastNotification";
+
+export default function ProfileForm({ initialData, onSave }) {
+    const [shopName, setShopName] = useState(initialData?.shopName || '');
+    const [description, setDescription] = useState(initialData?.description || '');
+    const [whatsapp, setWhatsapp] = useState(initialData?.whatsapp || '');
+    const [loading, setLoading] = useState(false);
+    const [userId, setUserId] = useState(null);
+    const [toast, setToast] = useState({ message: '', type: 'error', isVisible: false });
+
+    // Ensure the form is pre-populated with initial data
+    useEffect(() => {
+        if (initialData) {
+            setShopName(initialData.shopName || '');
+            setDescription(initialData.description || '');
+            setWhatsapp(initialData.whatsapp || '');
+        }
+    }, [initialData]);
+
+    // Get the current user's ID
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setUserId(user.uid);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setToast({ ...toast, isVisible: false });
+
+        if (!userId) {
+            setToast({ message: 'You must be logged in to update your profile.', type: 'error', isVisible: true });
+            setLoading(false);
+            return;
+        }
+        
+        try {
+            const sellerRef = doc(db, 'sellers', userId);
+            await updateDoc(sellerRef, {
+                shopName,
+                description,
+                whatsapp,
+            });
+
+            setToast({ message: 'Profile updated successfully!', type: 'success', isVisible: true });
+            if (onSave) {
+                onSave();
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            setToast({ message: 'Failed to update profile. Please try again.', type: 'error', isVisible: true });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="relative p-6 bg-white shadow-lg rounded-3xl">
+            <h3 className="mb-4 text-2xl font-bold text-gray-800">Edit Profile</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Shop Name</label>
+                    <input
+                        type="text"
+                        value={shopName}
+                        onChange={(e) => setShopName(e.target.value)}
+                        className="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        rows="3"
+                        className="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">WhatsApp Number</label>
+                    <input
+                        type="tel"
+                        value={whatsapp}
+                        onChange={(e) => setWhatsapp(e.target.value)}
+                        className="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                        required
+                    />
+                </div>
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                >
+                    {loading ? 'Saving...' : 'Save Changes'}
+                </button>
+            </form>
+            <ToastNotification
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onDismiss={() => setToast({ ...toast, isVisible: false })}
             />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center w-24 h-24 text-gray-400 bg-gray-100 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2zM7.07 18.28c.43-.91 1.77-1.47 4.93-1.47c3.16 0 4.51.56 4.93 1.47C16.92 16.91 17.5 16.14 18 15.2c-1.39-1.92-3.83-3.2-6-3.2s-4.61 1.28-6 3.2c.5.94 1.08 1.71 1.93 3.08zM12 11c-2.21 0-4-1.79-4-4s1.79-4 4-4s4 1.79 4 4s-1.79 4-4 4z" />
-            </svg>
-          </div>
-        )}
-
-        <div className="flex-1">
-          <h2 className="text-2xl font-semibold text-gray-800">{profile.shopName || "Shop Name"}</h2>
-          <p className="text-base text-gray-500">{profile.description || "Short description"}</p>
-          
-          {/* Location */}
-          {profile.location && (
-            <div className="flex items-center mt-2 space-x-2 text-sm text-gray-500">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-purple-500" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5a2.5 2.5 0 0 1 0 5z" />
-              </svg>
-              <span>{profile.location}</span>
-            </div>
-          )}
-
-          {/* WhatsApp Number */}
-          {profile.whatsapp && (
-            <div className="flex items-center mt-1 space-x-2 text-sm text-gray-500">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-purple-500" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24c1.12.37 2.33.57 3.57.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.57c.11.35.03.74-.25 1.02l-2.2 2.2z" />
-              </svg>
-              <span>{profile.whatsapp}</span>
-            </div>
-          )}
         </div>
-      </div>
-    </div>
-  );
+    );
 }

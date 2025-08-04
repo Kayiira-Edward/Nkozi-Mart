@@ -1,44 +1,73 @@
-// src/app/seller/page.jsx
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { FaBox, FaDollarSign, FaShoppingCart } from "react-icons/fa";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { FaBox, FaDollarSign, FaShoppingCart } from 'react-icons/fa';
+
+// Import the shared Firebase instances
+import { auth, db } from '@/app/firebase/config';
 
 export default function SellerDashboardHome() {
+  const [user, setUser] = useState(null);
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // Handle Authentication and Data Fetching
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+      if (authUser) {
+        setUser(authUser);
+      } else {
+        router.push('/auth/login');
+      }
+    });
+
+    return () => unsubscribeAuth();
+  }, [router]);
 
   useEffect(() => {
-    // Populate mock order data if it doesn't exist
-    // In a real app, this data would come from a backend API
-    const existingOrders = localStorage.getItem('sellerOrders');
-    if (!existingOrders) {
-      const mockOrders = [
-        { id: 1, items: [{ productId: 1, price: 10000 }], status: "pending" },
-        { id: 2, items: [{ productId: 2, price: 12000 }], status: "delivered" },
-        { id: 3, items: [{ productId: 1, price: 10000 }, { productId: 2, price: 12000 }], status: "shipped" },
-      ];
-      localStorage.setItem('sellerOrders', JSON.stringify(mockOrders));
-    }
+    if (!user) return;
     
-    // Fetch and calculate dashboard metrics from localStorage
-    const savedProducts = JSON.parse(localStorage.getItem("sellerProducts"));
-    if (savedProducts) {
-      setTotalProducts(savedProducts.length);
-    }
-    
-    const savedOrders = JSON.parse(localStorage.getItem("sellerOrders"));
-    if (savedOrders) {
-      setTotalOrders(savedOrders.length);
+    // Fetch and calculate dashboard metrics in real-time from Firestore
+    setLoading(true);
+
+    // Real-time listener for products
+    const productsQuery = query(collection(db, 'products'), where('sellerId', '==', user.uid));
+    const unsubscribeProducts = onSnapshot(productsQuery, (querySnapshot) => {
+      setTotalProducts(querySnapshot.size);
+    });
+
+    // Real-time listener for orders
+    const ordersQuery = query(collection(db, 'orders'), where('sellerId', '==', user.uid));
+    const unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
+      const ordersData = [];
+      querySnapshot.forEach((doc) => {
+        ordersData.push({ id: doc.id, ...doc.data() });
+      });
+      setTotalOrders(ordersData.length);
       
-      const revenue = savedOrders.reduce((sum, order) => {
+      // Calculate total revenue from the fetched orders
+      const revenue = ordersData.reduce((sum, order) => {
         const orderTotal = order.items.reduce((itemSum, item) => itemSum + item.price, 0);
         return sum + orderTotal;
       }, 0);
       setTotalRevenue(revenue);
-    }
-  }, []);
+      setLoading(false);
+    }, (error) => {
+      console.error('Error fetching dashboard data:', error);
+      setLoading(false);
+    });
+    
+    return () => {
+      unsubscribeProducts();
+      unsubscribeOrders();
+    };
+  }, [user]);
 
   // Format the revenue as a currency string
   const formatCurrency = (amount) => {
@@ -51,24 +80,32 @@ export default function SellerDashboardHome() {
   
   const cardData = [
     {
-      title: "Total Products",
+      title: 'Total Products',
       count: totalProducts,
       icon: <FaBox size={24} />,
-      iconColor: "bg-[#D9EEDA] text-[#25D366]",
+      iconColor: 'bg-[#D9EEDA] text-[#25D366]',
     },
     {
-      title: "Total Revenue",
+      title: 'Total Revenue',
       count: formatCurrency(totalRevenue),
       icon: <FaDollarSign size={24} />,
-      iconColor: "bg-[#FFF8E1] text-[#FBCF03]",
+      iconColor: 'bg-[#FFF8E1] text-[#FBCF03]',
     },
     {
-      title: "Total Orders",
+      title: 'Total Orders',
       count: totalOrders,
       icon: <FaShoppingCart size={24} />,
-      iconColor: "bg-[#DDECFD] text-[#2597F3]",
+      iconColor: 'bg-[#DDECFD] text-[#2597F3]',
     },
   ];
+
+  if (loading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-lg text-gray-600">
+        Loading dashboard...
+      </div>
+    );
+  }
 
   return (
     <main className="min-h-screen p-6 text-[#1E1E1E] transition-colors duration-300 bg-[#E8F8E3] md:p-10">

@@ -1,10 +1,13 @@
-// components/Sidebar.jsx
 'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { cn } from '../../../lib/utils';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+
+// Import the shared Firebase instance
+import { auth } from '@/app/firebase/config';
 
 import {
   LucideLayoutDashboard,
@@ -22,27 +25,37 @@ export default function Sidebar() {
   const [sellerId, setSellerId] = useState(null);
 
   useEffect(() => {
-    // In a real application, you would fetch this from an auth service or API.
-    // For this example, we'll use a mock sellerId from localStorage.
-    const fetchedSellerId = localStorage.getItem('currentSellerId') || 'demo-store';
-    setSellerId(fetchedSellerId);
+    // Set up an authentication state listener
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, get their UID
+        setSellerId(user.uid);
+      } else {
+        // User is signed out
+        setSellerId(null);
+      }
+    });
+
+    // Cleanup the subscription on unmount
+    return () => unsubscribe();
   }, []);
 
-  const handleLogout = () => {
-    // TODO: Implement actual session cleanup here (e.g., remove auth tokens)
-    localStorage.removeItem('authToken'); 
-    localStorage.removeItem('sellerProfile');
-    localStorage.removeItem('sellerProducts');
-    
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      router.push('/');
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
   };
 
   // Dynamically create the navigation items based on the sellerId
   const navItems = [
     { name: 'Dashboard', href: '/seller', icon: <LucideLayoutDashboard /> },
     { name: 'Add Product', href: '/seller/add-product', icon: <LucidePackagePlus /> },
-    { name: 'Manage Products', href: '/seller/manage-products', icon: <LucideListOrdered /> },
-    { name: 'My Store', href: `/seller/${sellerId}`, icon: <LucideUser /> },
+    { name: 'Manage Products', href: '/seller/dashboard', icon: <LucideListOrdered /> },
+    // Use sellerId to create a dynamic link
+    { name: 'My Store', href: sellerId ? `/store/${sellerId}` : '#', icon: <LucideUser /> },
     { name: 'Edit Profile', href: '/seller/profile', icon: <LucideSettings /> },
     { name: 'Share Store', href: '/seller/share', icon: <LucideQrCode /> },
   ];

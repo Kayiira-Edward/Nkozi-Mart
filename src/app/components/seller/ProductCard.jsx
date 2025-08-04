@@ -1,16 +1,36 @@
-// app/components/seller/ProductCard.jsx
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { FaWhatsapp } from "react-icons/fa";
-import { Edit, Trash2 } from "lucide-react";
+import { useState } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { FaWhatsapp } from 'react-icons/fa';
+import { Edit, Trash2 } from 'lucide-react';
+import { doc, deleteDoc } from 'firebase/firestore';
 
-export default function ProductCard({ product, whatsapp, onEdit, onDelete }) {
-  const productImageSrc = product.image || "https://placehold.co/200x200?text=Product+Image";
+// Import the shared Firebase instance
+import { db } from '@/app/firebase/config';
+
+export default function ProductCard({ product, whatsapp, onEdit }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const productImageSrc = product.image || 'https://placehold.co/200x200?text=Product+Image';
   const whatsappUrl = whatsapp 
     ? `https://wa.me/${whatsapp.replace("+", "")}?text=Hello,%20I'm%20interested%20in%20${encodeURIComponent(product.name)}`
     : '#';
+
+  const handleDelete = async () => {
+    if (window.confirm(`Are you sure you want to delete ${product.name}?`)) {
+      setIsDeleting(true);
+      try {
+        await deleteDoc(doc(db, 'products', product.id));
+        // No need to update state here, the parent component's Firestore listener will handle it.
+      } catch (error) {
+        console.error('Error deleting product:', error);
+        alert('Failed to delete product. Please try again.');
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
 
   return (
     <div
@@ -18,7 +38,7 @@ export default function ProductCard({ product, whatsapp, onEdit, onDelete }) {
     >
       <div className="relative w-full h-40 mb-4 overflow-hidden shadow-md rounded-2xl">
         <Image
-          src="/public/assets/images/shop.jpg"
+          src={productImageSrc}
           alt={product.name}
           fill
           style={{ objectFit: 'cover' }}
@@ -42,15 +62,14 @@ export default function ProductCard({ product, whatsapp, onEdit, onDelete }) {
               <Edit size={16} />
             </button>
           )}
-          {onDelete && (
-            <button
-              onClick={() => onDelete(product.id)}
-              className="p-2 text-white transition-colors duration-200 bg-red-500 rounded-full hover:bg-red-600"
-              aria-label={`Delete ${product.name}`}
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="p-2 text-white transition-colors duration-200 bg-red-500 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={`Delete ${product.name}`}
+          >
+            {isDeleting ? <span className="animate-spin">🗑️</span> : <Trash2 size={16} />}
+          </button>
         </div>
         <Link
           href={whatsappUrl}

@@ -1,10 +1,9 @@
-// app/seller/add-product/page.jsx
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from 'next/navigation';
 import ProductForm from "../../components/seller/ProductForm";
 import ToastNotification from "../../components/ToastNotification";
+import { useState } from 'react';
 
 export default function AddProductPage() {
   const router = useRouter();
@@ -14,30 +13,8 @@ export default function AddProductPage() {
     isVisible: false,
   });
 
-  const handleAddProduct = (newProduct) => {
-    // In a real app, you would send this data to a backend API.
-    // For this example, we save it to local storage.
-    const savedProducts = JSON.parse(localStorage.getItem("sellerProducts") || "[]");
-    
-    // Check for a file, if it exists, save it with a unique ID
-    let imageUrl = null;
-    if (newProduct.file) {
-      imageUrl = URL.createObjectURL(newProduct.file);
-      // For this example, we'll store the URL as the image path.
-      // In a real app, you'd upload the file to a server and get back a URL.
-    }
-    
-    const productToAdd = {
-        id: newProduct.id,
-        name: newProduct.name,
-        price: newProduct.price,
-        description: newProduct.description,
-        image: imageUrl || newProduct.image,
-    };
-
-    const updatedProducts = [...savedProducts, productToAdd];
-    localStorage.setItem("sellerProducts", JSON.stringify(updatedProducts));
-
+  // This function is called by the ProductForm after a successful product submission.
+  const handleProductSubmitted = () => {
     // Show a success notification
     setToast({
       message: "Product added successfully!",
@@ -45,16 +22,16 @@ export default function AddProductPage() {
       isVisible: true,
     });
     
-    // Redirect to the manage products page after a short delay
+    // Redirect to the dashboard after a short delay
     setTimeout(() => {
-      router.push("/seller/manage-products");
+      router.push("/seller/dashboard");
     }, 1500);
   };
 
   return (
     <div className="flex justify-center min-h-screen p-6 font-sans antialiased bg-gray-100">
       <div className="w-full max-w-xl">
-        <ProductForm onSubmit={handleAddProduct} />
+        <ProductForm onSubmit={handleProductSubmitted} />
       </div>
       <ToastNotification
         message={toast.message}

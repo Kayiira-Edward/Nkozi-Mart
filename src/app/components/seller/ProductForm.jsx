@@ -1,36 +1,58 @@
-// app/components/seller/ProductForm.jsx
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import ToastNotification from "../ToastNotification"; // Import the ToastNotification component
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
+// Import the shared Firebase instances
+import { auth, db, storage } from '@/app/firebase/config';
+import ToastNotification from "../ToastNotification";
 
 export default function ProductForm({ onSubmit, initialData }) {
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [description, setDescription] = useState('');
   const [imageFile, setImageFile] = useState(null);
-  const [previewURL, setPreviewURL] = useState("");
+  const [previewURL, setPreviewURL] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [userId, setUserId] = useState(null);
 
   // State for managing the toast notification
   const [toast, setToast] = useState({
-    message: "",
-    type: "error",
+    message: '',
+    type: 'error',
     isVisible: false,
   });
 
+  const router = useRouter();
+
+  // Set up auth state listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        router.push('/auth/login'); // Redirect to login if not authenticated
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
   useEffect(() => {
     if (initialData) {
-      setName(initialData.name || "");
-      setPrice(initialData.price || "");
-      setDescription(initialData.description || "");
-      setPreviewURL(initialData.image || "");
+      setName(initialData.name || '');
+      setPrice(initialData.price || '');
+      setDescription(initialData.description || '');
+      setPreviewURL(initialData.image || '');
     } else {
       // Reset form for adding new product
-      setName("");
-      setPrice("");
-      setDescription("");
-      setPreviewURL("");
+      setName('');
+      setPrice('');
+      setDescription('');
+      setPreviewURL('');
       setImageFile(null);
     }
   }, [initialData]);
@@ -43,29 +65,96 @@ export default function ProductForm({ onSubmit, initialData }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const uploadImage = async (file, productId) => {
+    if (!file) return null;
+    const storageRef = ref(storage, `products/${userId}/${productId}/${file.name}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    return await getDownloadURL(snapshot.ref);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setToast({ ...toast, isVisible: false });
 
     if (!name || !price) {
-      // Show an error toast notification
       setToast({
-        message: "Product name and price are required.",
-        type: "error",
+        message: 'Product name and price are required.',
+        type: 'error',
         isVisible: true,
       });
+      setLoading(false);
       return;
     }
 
-    const product = {
-      id: initialData?.id || Date.now(),
-      name,
-      price: parseFloat(price),
-      description,
-      image: previewURL,
-      file: imageFile,
-    };
+    try {
+      if (initialData?.id) {
+        // This is an update operation
+        let imageUrl = initialData.image;
+        if (imageFile) {
+          imageUrl = await uploadImage(imageFile, initialData.id);
+        }
 
-    onSubmit(product);
+        const productRef = doc(db, 'products', initialData.id);
+        await updateDoc(productRef, {
+          name,
+          price: parseFloat(price),
+          description,
+          image: imageUrl,
+          updatedAt: serverTimestamp(),
+        });
+        setToast({
+          message: 'Product updated successfully!',
+          type: 'success',
+          isVisible: true,
+        });
+      } else {
+        // This is an add new product operation
+        const productsCollection = collection(db, 'products');
+        // Add a temporary document to get a unique ID
+        const newProductRef = doc(productsCollection);
+        const productId = newProductRef.id;
+
+        const imageUrl = await uploadImage(imageFile, productId);
+
+        await setDoc(newProductRef, {
+          sellerId: userId,
+          name,
+          price: parseFloat(price),
+          description,
+          image: imageUrl,
+          createdAt: serverTimestamp(),
+        });
+
+        setToast({
+          message: 'Product added successfully!',
+          type: 'success',
+          isVisible: true,
+        });
+        
+        // Reset the form after successful addition
+        setName('');
+        setPrice('');
+        setDescription('');
+        setPreviewURL('');
+        setImageFile(null);
+      }
+      
+      // Call the onSubmit prop if it exists
+      if (onSubmit) {
+        onSubmit();
+      }
+
+    } catch (error) {
+      console.error('Error submitting product:', error);
+      setToast({
+        message: `Failed to submit product: ${error.message}`,
+        type: 'error',
+        isVisible: true,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -73,7 +162,7 @@ export default function ProductForm({ onSubmit, initialData }) {
       <div className="w-full max-w-xl p-6 bg-white shadow-[0_0px_60px_-15px_rgba(0,0,0,0.3)] rounded-3xl sm:p-8 lg:p-10">
         <form onSubmit={handleSubmit} className="space-y-6">
           <h2 className="text-3xl font-bold text-center text-[#2F4F4F]">
-            {initialData ? "Update Product" : "Add Product"}
+            {initialData ? 'Update Product' : 'Add Product'}
           </h2>
           <div className="space-y-4">
             <div>
@@ -131,9 +220,10 @@ export default function ProductForm({ onSubmit, initialData }) {
 
           <button
             type="submit"
-            className="w-full py-4 text-white bg-[#5CB85C] rounded-2xl font-bold font-['Roboto'] hover:bg-[#4CAF50] transition-colors shadow-lg transform active:scale-95"
+            disabled={loading}
+            className="w-full py-4 text-white bg-[#5CB85C] rounded-2xl font-bold font-['Roboto'] hover:bg-[#4CAF50] transition-colors shadow-lg transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {initialData ? "Update Product" : "Add Product"}
+            {loading ? 'Submitting...' : (initialData ? 'Update Product' : 'Add Product')}
           </button>
         </form>
       </div>
