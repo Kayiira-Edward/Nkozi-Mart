@@ -137,14 +137,23 @@ export default function HomePage() {
     );
   }
 
-  // Display loading screen while fetching data
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-lg font-medium text-gray-500">
-        Loading amazing products...
+      <div className="flex flex-col items-center justify-center min-h-screen text-green-600 bg-white">
+        <img
+          src="/logo.png"
+          alt="ShopLink Logo"
+          className="w-20 h-20 mb-4 animate-bounce"
+        />
+        <h1 className="mb-2 text-3xl font-bold">ShopLink</h1>
+        <p className="text-lg font-medium">Bringing Local Shops Closer</p>
+        <span className="mt-4 text-sm text-gray-400 animate-pulse">
+          Loading amazing products...
+        </span>
       </div>
     );
   }
+  
 
   return (
     <main className="min-h-screen pb-24 bg-[#f0f2f5] font-sans">
@@ -171,7 +180,7 @@ export default function HomePage() {
             About
           </Link>
           <Link
-            href="/become-seller"
+            href="/auth?mode=login"
             className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
           >
             Become a Seller
