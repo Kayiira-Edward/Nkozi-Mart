@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+🛍️ ShopLink — WhatsApp-Powered Local Commerce
+ShopLink is a streamlined, efficient marketplace designed to connect local buyers and sellers directly through WhatsApp. It bypasses the need for traditional e-commerce accounts or integrated payment gateways, making transactions simple, fast, and personal.
 
-## Getting Started
+✨ Key Features
+🛒 Seamless Shopping Experience: Buyers can easily browse products, add them to a virtual cart, and place orders with a few taps.
 
-First, run the development server:
+🤝 Direct Seller Communication: The platform automatically groups cart items by seller, allowing buyers to place orders directly via a pre-filled WhatsApp message.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+🛍️ Seller-Centric Management: A dedicated dashboard empowers sellers to manage their product inventory and profile.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+📊 Admin Control Panel: An administrative interface provides oversight and control for the platform owner.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+💾 Persistent Cart: The cart's contents are saved in local storage, so buyers can return to their session without losing their selections.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+🧠 How It Works
+Browse & Build a Cart: A buyer explores the homepage and adds desired products to their cart.
 
-## Learn More
+Order via WhatsApp: From the cart, a buyer can initiate a conversation with each seller.
 
-To learn more about Next.js, take a look at the following resources:
+Automatic Message Generation: A single button click generates a pre-formatted WhatsApp message for that seller, listing the items and quantities ordered.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Example message:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Hi [Seller Name], I would like to order the following:
 
-## Deploy on Vercel
+Mandazi Combo (UGX 2,000)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Blue Band Sachet (UGX 1,500)
+Total: UGX 3,500
+Thank you!
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+🚀 Tech Stack
+Framework: Next.js 14 (App Router)
+
+Styling: Tailwind CSS
+
+State Management: React Hooks & Local Storage
+
+Database: Google Cloud Firestore (for real-time product/seller data)
+
+Deployment: Vercel
+
+Messaging: WhatsApp Deep Linking API
+
+📦 Future Enhancements
+Real-time product feed that dynamically shuffles on each page load.
+
+Seller registration and profile management with Firestore integration.
+
+Admin panel to monitor and approve sellers and products.
+
+User authentication to track order history and preferences.
