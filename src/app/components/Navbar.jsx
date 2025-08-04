@@ -4,14 +4,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X } from "lucide-react"; // optional: install lucide-react
+import { Menu, X } from "lucide-react"; // Make sure lucide-react is installed: npm install lucide-react
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import { faShoppingCart } from "@fortawesome/free-solid-svg-icons"; // Make sure fontawesome is installed: npm install @fortawesome/react-fontawesome @fortawesome/free-solid-svg-icons
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  // const [searchTerm, setSearchTerm] = useState(""); // Search term is now handled in HomePage
 
   const toggleMenu = () => setMenuOpen(!menuOpen);
 
@@ -19,35 +19,34 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 flex items-center justify-between p-4 bg-white shadow-md">
       {/* Logo */}
       <Link href="/" className="flex items-center flex-shrink-0 space-x-2">
-        <Image src="/logo.png" alt="Ugbuy Logo" width={40} height={40} />
-        <span className="text-xl font-bold text-green-600">Ugbuy</span>
+        {/* Ensure /logo.png exists in your public directory or replace with a placeholder */}
+        <Image
+                  src="/assets/images/one.jpg"
+                  alt="Order steps" width={40} height={40} />
+        <span className="text-xl font-bold text-green-600">ShopLink</span>
       </Link>
 
       {/* Desktop Menu & Cart (grouped together and pushed to the right) */}
       <div className="items-center hidden space-x-6 md:flex">
         <Link href="/" className="text-gray-700 transition-colors duration-200 hover:text-green-600">Home</Link>
         <Link href="/about" className="text-gray-700 transition-colors duration-200 hover:text-green-600">About</Link>
+        <Link href="/shop" className="text-gray-700 transition-colors duration-200 hover:text-green-600">Shop</Link>
+        <Link href="/categories" className="text-gray-700 transition-colors duration-200 hover:text-green-600">Categories</Link>
 
-        {/* Cart Icon - Moved inside desktop menu group */}
-        <Link href="/cart" className="relative ml-4"> {/* Added ml-4 for some spacing from About */}
+
+        {/* Cart Icon for Desktop - Remains here */}
+        <Link href="/cart" className="relative ml-4">
           <FontAwesomeIcon icon={faShoppingCart} className="text-xl text-gray-700 transition-colors duration-200 hover:text-green-600" />
           <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-600 rounded-full -top-2 -right-2">
             3
           </span>
         </Link>
-        
-        <Link href="/sell" className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-green-600 rounded-lg shadow-md hover:bg-green-700">Become a Seller</Link>
-        <Link href="/login" className="px-4 py-2 text-sm font-medium text-green-600 transition-colors duration-200 border-2 border-green-600 rounded-lg hover:bg-green-50">Sign In</Link>
+
+        <Link href="/auth" className="px-4 py-2 text-sm font-medium text-white transition-colors duration-200 bg-green-600 rounded-lg shadow-md hover:bg-green-700">Become a Seller</Link>
       </div>
 
-      {/* Mobile Hamburger & Cart (for mobile, cart needs to be outside the menu for visibility) */}
-      <div className="flex items-center space-x-4 md:hidden"> {/* Added space-x-4 for spacing */}
-        <Link href="/cart" className="relative">
-          <FontAwesomeIcon icon={faShoppingCart} className="text-xl text-gray-700" />
-          <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-600 rounded-full -top-2 -right-2">
-            3
-          </span>
-        </Link>
+      {/* Mobile Hamburger (Cart removed from here) */}
+      <div className="flex items-center md:hidden">
         <button onClick={toggleMenu} className="text-gray-700 hover:text-green-600">
           {menuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -65,6 +64,5 @@ export default function Navbar() {
         </div>
       )}
     </nav>
-
   );
 }

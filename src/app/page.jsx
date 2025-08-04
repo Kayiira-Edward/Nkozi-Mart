@@ -1,108 +1,503 @@
-import SearchFilterBar from "./components/SearchFilterBar";
-import Image from "next/image";
 
-export default function Home() {
+"use client";
+
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Menu, X } from "lucide-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
+import { useCart } from "./providers/CartProvider";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "./firebase/config"; // Import your Firestore instance
+
+// Updated banners with seller-specific data and wide images
+const banners = [
+  {
+    id: 1,
+    title: "Flash Sale!",
+    description: "Get up to 50% off on selected items!",
+    bgColor: "from-orange-400 to-orange-500",
+    img: "/assets/images/one.jpg",
+    sellerName: "Boda Bitez",
+  },
+  {
+    id: 2,
+    title: "Order via WhatsApp!",
+    description: "Chat with us for quick orders & support.",
+    bgColor: "from-green-500 to-green-600",
+    img: "/assets/images/one.jpg",
+    sellerName: "Campus Mart",
+  },
+];
+
+const categories = [
+  "All",
+  "Snacks & Beverages",
+  "Toiletries & Personal Care",
+  "Stationery & Office Supplies",
+  "Electronics & Gadgets",
+  "Groceries & Fresh Produce",
+  "Fashion & Apparel",
+  "Home & Kitchen",
+  "Books & Media",
+  "Health & Wellness",
+  "Other",
+];
+
+export default function HomePage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const toggleMenu = () => setMenuOpen(!menuOpen);
+
+  const { cartItems, addToCart } = useCart();
+  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const searchInputRef = useRef(null);
+
+  // Function to shuffle an array to create a dynamic feed
+  const shuffleArray = (array) => {
+    let newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  // Effect for banner carousel
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentBannerIndex((prevIndex) =>
+        prevIndex === banners.length - 1 ? 0 : prevIndex + 1
+      );
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [banners.length]);
+
+  // Effect to fetch products from Firestore and shuffle them
+  useEffect(() => {
+    // Ensure Firestore is initialized before fetching
+    if (!db) {
+      console.error("Firestore is not initialized.");
+      setLoading(false);
+      return;
+    }
+
+    // `onSnapshot` creates a real-time listener for the "products" collection
+    const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
+      const fetchedProducts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      
+      // Shuffle the products to create a dynamic feed
+      setProducts(shuffleArray(fetchedProducts));
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching products from Firestore: ", error);
+      setLoading(false);
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => unsubscribe();
+  }, []);
+
+  const handleSellerClick = (sellerName, sellerId) => {
+    console.log(`Navigating to seller profile: ${sellerName} (ID: ${sellerId})`);
+  };
+
+  const handleCategoriesClick = () => {
+    if (searchInputRef.current) {
+      searchInputRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      searchInputRef.current.focus();
+    }
+  };
+
+  // Dynamic filtering of products based on state
+  let filteredProducts = products;
+  if (selectedCategory !== "All") {
+    filteredProducts = filteredProducts.filter(
+      (product) => product.category === selectedCategory
+    );
+  }
+  if (searchTerm) {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    filteredProducts = filteredProducts.filter(
+      (product) =>
+        product.name.toLowerCase().includes(lowerCaseSearchTerm) ||
+        (product.sellerName && product.sellerName.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (product.color && product.color.toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  }
+
+  // Display loading screen while fetching data
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-lg font-medium text-gray-500">
+        Loading amazing products...
+      </div>
+    );
+  }
+
   return (
-    <section>
-    <SearchFilterBar />
-  
-    {/* Hero Section */}
-    <section className="relative hidden min-h-screen py-16 overflow-hidden bg-white lg:block lg:py-24">
-      <div className="container relative z-10 flex flex-col items-center justify-between px-4 mx-auto sm:px-6 lg:px-8 lg:flex-row">
-        {/* Left Content Area */}
-        <div className="mb-12 text-center lg:w-1/2 lg:text-left lg:mb-0">
-          <h3 className="mb-6 text-5xl font-extrabold leading-tight text-gray-900 sm:text-6xl lg:text-7xl">
-            <span className="block">Your Local Marketplace</span>
-            <span className="block text-green-600">Delivered to Your WhatsApp</span>
-          </h3>
-          <p className="max-w-xl mx-auto mb-10 text-xl leading-relaxed text-gray-700 lg:mx-0">
-            Discover local products, order conveniently via WhatsApp, and get hassle-free delivery.
-          </p>
-          <div className="flex flex-col justify-center gap-4 sm:flex-row lg:justify-start">
-            <button className="px-8 py-4 font-semibold text-white transition duration-300 ease-in-out transform bg-green-600 rounded-lg shadow-lg hover:bg-green-700 hover:scale-105">
+    <main className="min-h-screen pb-24 bg-[#f0f2f5] font-sans">
+      {/* Main Navigation Bar (Top for Desktop, Hamburger for Mobile) */}
+      <nav className="sticky top-0 z-50 flex items-center justify-between p-4 bg-white shadow-md">
+        {/* Logo - Updated to "ShopLink" */}
+        <Link href="/" className="flex items-center flex-shrink-0 space-x-2">
+          <Image
+            src="/assets/images/one.jpg"
+            alt="ShopLink Logo"
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
+          <span className="text-xl font-bold text-[#181a1f]">ShopLink</span>
+        </Link>
+
+        {/* Desktop Menu & Cart */}
+        <div className="items-center hidden space-x-6 md:flex">
+          <Link
+            href="/about"
+            className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
+          >
+            About
+          </Link>
+          <Link
+            href="/become-seller"
+            className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
+          >
+            Become a Seller
+          </Link>
+          <Link
+            href="/auth?mode=login"
+            className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
+          >
+            Sign In
+          </Link>
+
+          <Link href="/cart" className="relative ml-4">
+            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#f1f5f9] shadow-sm">
+              <FontAwesomeIcon
+                icon={faShoppingCart}
+                className="text-xl text-[#2edc86]"
+              />
+            </div>
+            {cartItems.length > 0 && (
+              <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-600 rounded-full -top-1 -right-1">
+                {cartItems.reduce((acc, item) => acc + item.quantity, 0)}
+              </span>
+            )}
+          </Link>
+        </div>
+
+        {/* Mobile Hamburger & Cart Icon */}
+        <div className="flex items-center space-x-4 md:hidden">
+          <Link href="/cart" className="relative">
+            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 shadow-sm rounded-xl">
+              <FontAwesomeIcon
+                icon={faShoppingCart}
+                className="text-xl text-[#2edc86]"
+              />
+            </div>
+            {cartItems.length > 0 && (
+              <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-semibold text-white bg-red-600 rounded-full -top-1 -right-1">
+                {cartItems.reduce((acc, item) => acc + item.quantity, 0)}
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={toggleMenu}
+            className="w-10 h-10 flex items-center justify-center text-[#181a1f] rounded-xl bg-gray-100 shadow-sm"
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile Menu Drawer */}
+        {menuOpen && (
+          <div className="absolute left-0 right-0 flex flex-col items-start p-4 space-y-4 bg-white border-t border-gray-100 shadow-lg top-16 md:hidden">
+            <Link
+              href="/about"
+              className="w-full px-3 py-2 text-lg text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
+            >
+              About
+            </Link>
+            <Link
+              href="/become-seller"
+              className="w-full px-3 py-2 text-lg font-semibold text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
+            >
               Become a Seller
-            </button>
-            <button className="px-8 py-4 font-semibold text-green-600 transition duration-300 ease-in-out border-2 border-green-600 rounded-lg hover:bg-green-50 hover:scale-105">
-              How It Works
-            </button>
+            </Link>
+            <Link
+              href="/auth?mode=login"
+              className="w-full px-3 py-2 text-lg font-semibold text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
+            >
+              Sign In
+            </Link>
+          </div>
+        )}
+      </nav>
+
+      <div className="px-4 pt-6">
+        {/* Search */}
+        <div className="relative mb-6">
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search products, sellers, or colors..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-5 py-3 pl-12 text-sm border-2 border-gray-100 shadow-sm rounded-full focus:outline-none focus:ring-2 focus:ring-[#2edc86] bg-white"
+          />
+          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
           </div>
         </div>
-  
-        {/* Right Visuals Area (Mockups/Cards) */}
-        <div className="relative lg:w-1/2 flex justify-center items-center lg:pt-16 min-h-[500px] lg:min-h-[700px]">
-          {/* Main Illustration/Image - Adjusted size for better fit */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Image
-              src="/assets/images/wOrder.jpg"
-              alt="Happy customer receiving delivery"
-              width={600}
-              height={600}
-              quality={90}
-              className="object-contain w-auto h-full max-h-[600px] lg:max-h-[700px] animate-fade-in rounded max-w-full"
-              priority
-            />
+
+        {/* Promo Banner Carousel */}
+        <div className="relative w-full h-40 mb-8 overflow-hidden shadow-lg rounded-2xl md:h-48 lg:h-56">
+          <div
+            className="flex h-full transition-transform duration-500 ease-in-out"
+            style={{ transform: `translateX(-${currentBannerIndex * 100}%)` }}
+          >
+            {banners.map((banner) => (
+              <div
+                key={banner.id}
+                className={`flex-shrink-0 w-full h-full bg-gradient-to-r ${banner.bgColor} p-6 flex flex-col justify-between md:flex-row md:items-center`}
+              >
+                <div>
+                  <p className="mb-1 text-xl font-bold text-white">
+                    {banner.title}
+                  </p>
+                  <p className="text-sm text-white text-opacity-80">
+                    {banner.description}
+                  </p>
+                  <button className="px-5 py-2 mt-4 text-sm font-semibold text-white transition-colors rounded-full shadow-md bg-white/20 hover:bg-white/40">
+                    Order from {banner.sellerName}
+                  </button>
+                </div>
+                <div className="relative hidden w-1/2 h-full md:block">
+                  <Image
+                    src={banner.img}
+                    alt="Order steps"
+                    layout="fill"
+                    objectFit="cover"
+                    className="object-contain"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
-  
-          {/* Floating Cards - Adjusted Positioning */}
-          {/* Bottom Middle Card (Order Confirmation) */}
-          <div className="absolute bg-white p-6 rounded-xl shadow-xl border border-gray-100
-              top-[50%] left-1/2 -translate-x-1/2
-              lg:top-[55%] lg:left-1/2 lg:-translate-x-1/2 z-30 w-72 md:w-80 animate-slide-in-bottom">
-            <div className="flex items-center mb-4 space-x-3">
-              <div className="relative w-12 h-12 overflow-hidden bg-gray-200 rounded-full">
-                <Image
-                  src="/assets/images/one.jpg"
-                  alt="Order steps"
-                  layout="fill"
-                  objectFit="cover"
+          {/* Optional: Add dot indicators for carousel */}
+          <div className="absolute flex space-x-2 -translate-x-1/2 bottom-4 left-1/2">
+            {banners.map((_, index) => (
+              <span
+                key={index}
+                className={`block w-2 h-2 rounded-full ${
+                  currentBannerIndex === index
+                    ? "bg-white"
+                    : "bg-white bg-opacity-50"
+                }`}
+              ></span>
+            ))}
+          </div>
+        </div>
+
+        {/* Category Chips - Refined styling */}
+        <div className="mb-8">
+          <h2 className="mb-3 text-lg font-semibold text-[#181a1f]">
+            Categories
+          </h2>
+          <div className="flex pb-2 space-x-3 overflow-x-auto scrollbar-hide">
+            {categories.map((cat, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedCategory(cat)}
+                className={`flex-shrink-0 px-5 py-2 text-sm font-medium rounded-full shadow-sm transition-colors duration-200
+                  ${
+                    selectedCategory === cat
+                      ? "bg-[#2edc86] text-white"
+                      : "bg-white border-2 border-gray-100 text-gray-700 hover:bg-gray-50 hover:border-[#2edc86] hover:text-[#2edc86]"
+                  }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Recommended Products Grid */}
+        <div>
+          <h2 className="mb-3 text-lg font-semibold text-[#181a1f]">
+            Recommended for You
+          </h2>
+          <div className="grid grid-cols-2 gap-4 pb-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {filteredProducts.length > 0 ? (
+              filteredProducts.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex flex-col p-3 transition-shadow duration-200 bg-white border-2 border-gray-100 shadow-md rounded-3xl hover:shadow-lg"
+                >
+                  <div className="relative w-full h-32 mb-3 overflow-hidden rounded-2xl">
+                    <Image
+                      src={item.imageUrl || "https://placehold.co/400x400/E8F5E9/1E8449?text=No+Image"}
+                      alt={item.name}
+                      layout="fill"
+                      objectFit="cover"
+                      className="rounded-2xl"
+                    />
+                  </div>
+                  <p className="text-base font-semibold text-gray-900 truncate">
+                    {item.name}
+                  </p>
+                  <button
+                    onClick={() => handleSellerClick(item.shop, item.sellerId)}
+                    className="flex items-center mt-1 mb-2 space-x-1 group focus:outline-none"
+                  >
+                    <div className="flex-shrink-0 w-6 h-6 overflow-hidden rounded-full">
+                      <Image
+                        src={item.sellerAvatar || "/assets/images/seller-placeholder.png"}
+                        alt={`${item.sellerName} Avatar`}
+                        width={24}
+                        height={24}
+                        className="rounded-full"
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 truncate transition-colors group-hover:text-[#2edc86] text-sm">
+                      {item.sellerName}
+                    </p>
+                  </button>
+                  <div className="flex items-center justify-between mt-auto">
+                    <p className="font-bold text-[#2edc86] text-lg">
+                      UGX {item.price.toLocaleString()}
+                    </p>
+                    <button
+                      onClick={() => addToCart(item)}
+                      className="p-2 text-white transition-colors bg-[#2edc86] rounded-full hover:bg-[#4ade80]"
+                      title="Add to Cart"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-5 h-5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="text-center text-gray-500 col-span-full">
+                No products found. Try a different search or category.
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Navigation Bar - Visible on small screens */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white border-t-2 border-gray-100 shadow-lg sm:hidden">
+        <div className="flex justify-around py-3">
+          <Link
+            href="/"
+            className="flex flex-col items-center text-[#2edc86] font-medium"
+          >
+            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#e6fcf0]">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2 2v10a1 1 0 001 1h3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
                 />
-              </div>
-              <div>
-                <p className="text-lg font-semibold text-gray-800">How to Order</p>
-                <p className="text-sm text-gray-500">Follow these easy steps.</p>
-              </div>
+              </svg>
             </div>
-  
-            <ol className="mb-4 space-y-1 text-sm text-gray-700 list-decimal list-inside">
-              <li>Select a category</li>
-              <li>Choose your product</li>
-              <li>Click “Add to Cart”</li>
-              <li>Go to cart and confirm</li>
-              <li>Send order via WhatsApp</li>
-            </ol>
-  
-            <button className="w-full py-3 font-semibold text-green-800 transition duration-200 ease-in-out bg-green-100 rounded-lg hover:bg-green-200">
-              Start Shopping
-            </button>
-          </div>
-  
-  
-          {/* Right Notification Card (New Product/Vendor) */}
-          <div className="absolute z-10 p-4 bg-white rounded-lg shadow-lg top-1/4 right-4 sm:top-1/4 sm:right-4 lg:top-1/4 lg:-right-20 lg:translate-x-0 w-60 md:w-64 animate-slide-in-right">
-            <div className="flex items-center space-x-3">
-              <div className="relative flex items-center justify-center w-10 h-10 overflow-hidden bg-green-100 rounded-full">
-                <span className="font-bold text-green-600">UG</span>
-              </div>
-              <div>
-                <p className="text-base font-semibold text-gray-800">Fresh Drop: Headphones & Gadgets!</p>
-                <p className="text-xs text-gray-500">Just listed near campus 2 mins ago.</p>
-              </div>
+            <span className="mt-1 text-xs">Home</span>
+          </Link>
+          <button
+            onClick={handleCategoriesClick}
+            className="flex flex-col items-center text-gray-500 transition-colors hover:text-[#2edc86]"
+          >
+             <div className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-gray-100">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              </svg>
             </div>
-          </div>
-  
+            <span className="mt-1 text-xs">Categories</span>
+          </button>
+          <Link
+            href="/cart"
+            className="relative flex flex-col items-center text-gray-500 transition-colors hover:text-[#2edc86]"
+          >
+             <div className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-gray-100">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-6 h-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.182 1.701.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                />
+              </svg>
+            </div>
+            {cartItems.length > 0 && (
+              <span className="absolute flex items-center justify-center w-4 h-4 text-xs font-semibold text-white bg-red-600 rounded-full -top-1 right-5">
+                {cartItems.reduce((acc, item) => acc + item.quantity, 0)}
+              </span>
+            )}
+            <span className="mt-1 text-xs">Cart</span>
+          </Link>
         </div>
-      </div>
-  
-      {/* Trust Text below the main section */}
-      <div className="container px-4 mx-auto mt-8 text-center sm:px-6 lg:px-8 lg:mt-24">
-        <p className="text-lg text-gray-600">
-          Trust the easiest way to support local businesses and get what you need, fast.
-        </p>
-      </div>
-    </section>
-  
-    {/* Product Grid - cards coming here */}
-    {/* If this is meant for actual product cards, you should create a new section here */}
-  </section>
+      </nav>
+    </main>
   );
 }

@@ -1,23 +1,22 @@
 import "./globals.css";
 import "../fontawesome";
-import { Geist, Geist_Mono } from "next/font/google";
-import Navbar from "./components/Navbar";
+import { GeistSans } from "geist/font/sans"; // Correct import for Geist Sans
+import { GeistMono } from "geist/font/mono"; // Correct import for Geist Mono
+import { CartProvider } from "./providers/CartProvider";
 import Footer from "./components/Footer";
 
-const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
-
 export const metadata = {
-  title: "Ugbuy - Marketplace",
+  title: "ShopLink - Marketplace",
   description: "Buy and sell anything easily.",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Navbar />
-        <main>{children}</main>
+      <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+        <CartProvider>
+          <main>{children}</main>
+        </CartProvider>
         <Footer />
       </body>
     </html>
