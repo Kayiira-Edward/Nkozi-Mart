@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { Edit } from "lucide-react";
 
 // Import shared Firebase instances
@@ -48,6 +48,21 @@ export default function SellerProfilePage() {
         return () => unsubscribeFirestore();
     }, [user]);
 
+    const handleSaveProfile = async (formData) => {
+        if (!user) return;
+
+        setLoading(true);
+        try {
+            const profileRef = doc(db, "sellers", user.uid);
+            await updateDoc(profileRef, formData);
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Error updating seller profile:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen text-lg text-gray-600">
@@ -91,7 +106,7 @@ export default function SellerProfilePage() {
                     {isEditing ? (
                         <ProfileForm 
                             initialData={profile} 
-                            onSave={() => setIsEditing(false)} 
+                            onSubmit={handleSaveProfile} 
                         />
                     ) : (
                         <ProfileDisplay profile={profile} />
