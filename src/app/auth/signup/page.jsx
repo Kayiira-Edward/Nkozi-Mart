@@ -2,24 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { initializeApp } from 'firebase/app';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
 import { FaUserPlus } from 'react-icons/fa';
 
-// NOTE: Replace these with your actual Firebase configuration details.
-const firebaseConfig = {
-    apiKey: "AIzaSyA9D0J9-54ramNXlonXrWRCuXH9Qjqt-d4",
-    authDomain: "shoplink-7ba8f.firebaseapp.com",
-    projectId: "shoplink-7ba8f",
-    storageBucket: "shoplink-7ba8f.firebasestorage.app",
-    messagingSenderId: "196720230323",
-    appId: "1:196720230323:web:da0dc7146e2837e02295c6",
-    measurementId: "G-8DV4D4WBLY"
-  };
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// Import the shared Firebase auth instance
+import { auth } from '@/app/firebase/config';
 
 export default function SignupPage() {
     const [email, setEmail] = useState('');

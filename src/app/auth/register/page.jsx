@@ -2,26 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { initializeApp } from 'firebase/app';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { FaStore } from 'react-icons/fa';
 
-// NOTE: Replace these with your actual Firebase configuration details.
-const firebaseConfig = {
-    apiKey: "AIzaSyA9D0J9-54ramNXlonXrWRCuXH9Qjqt-d4",
-    authDomain: "shoplink-7ba8f.firebaseapp.com",
-    projectId: "shoplink-7ba8f",
-    storageBucket: "shoplink-7ba8f.firebasestorage.app",
-    messagingSenderId: "196720230323",
-    appId: "1:196720230323:web:da0dc7146e2837e02295c6",
-    measurementId: "G-8DV4D4WBLY"
-  };
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Import the shared Firebase instances
+import { auth, db } from '@/app/firebase/config';
 
 export default function RegisterPage() {
     const [email, setEmail] = useState('');
