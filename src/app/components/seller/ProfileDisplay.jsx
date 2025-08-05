@@ -1,119 +1,61 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import Image from 'next/image';
+import { FaWhatsapp } from 'react-icons/fa'; // Import WhatsApp icon
 
-// Import shared Firebase instances
-import { db, auth } from '@/app/firebase/config';
-import ToastNotification from "../ToastNotification";
+export default function ProfileDisplay({ profile }) {
+    if (!profile) {
+        return (
+            <div className="p-8 text-center text-gray-500 bg-white border-2 border-gray-300 border-dashed shadow-md rounded-xl">
+                <p>No profile data available to display.</p>
+            </div>
+        );
+    }
 
-export default function ProfileForm({ initialData, onSave }) {
-    const [shopName, setShopName] = useState(initialData?.shopName || '');
-    const [description, setDescription] = useState(initialData?.description || '');
-    const [whatsapp, setWhatsapp] = useState(initialData?.whatsapp || '');
-    const [loading, setLoading] = useState(false);
-    const [userId, setUserId] = useState(null);
-    const [toast, setToast] = useState({ message: '', type: 'error', isVisible: false });
-
-    // Ensure the form is pre-populated with initial data
-    useEffect(() => {
-        if (initialData) {
-            setShopName(initialData.shopName || '');
-            setDescription(initialData.description || '');
-            setWhatsapp(initialData.whatsapp || '');
-        }
-    }, [initialData]);
-
-    // Get the current user's ID
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setUserId(user.uid);
-            }
-        });
-        return () => unsubscribe();
-    }, []);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        setToast({ ...toast, isVisible: false });
-
-        if (!userId) {
-            setToast({ message: 'You must be logged in to update your profile.', type: 'error', isVisible: true });
-            setLoading(false);
-            return;
-        }
-        
-        try {
-            const sellerRef = doc(db, 'sellers', userId);
-            await updateDoc(sellerRef, {
-                shopName,
-                description,
-                whatsapp,
-            });
-
-            setToast({ message: 'Profile updated successfully!', type: 'success', isVisible: true });
-            if (onSave) {
-                onSave();
-            }
-        } catch (error) {
-            console.error('Error updating profile:', error);
-            setToast({ message: 'Failed to update profile. Please try again.', type: 'error', isVisible: true });
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Construct WhatsApp URL
+    const whatsappUrl = profile.whatsapp 
+        ? `https://wa.me/${profile.whatsapp.replace("+", "")}`
+        : null;
 
     return (
-        <div className="relative p-6 bg-white shadow-lg rounded-3xl">
-            <h3 className="mb-4 text-2xl font-bold text-gray-800">Edit Profile</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="p-6 bg-white rounded-3xl"> {/* Consistent card styling */}
+            <h3 className="mb-4 text-2xl font-bold text-gray-800">My Shop Details</h3> {/* Consistent text color */}
+            
+            <div className="flex items-center mb-6 space-x-4">
+                {/* Placeholder for seller avatar, matching the homepage product card seller avatar */}
+                <Image
+                    src={profile.profileImage || "/assets/images/seller-placeholder.png"} // Use actual profile image if available
+                    alt={`${profile.storeName} Avatar`}
+                    width={64} // Slightly larger for profile display
+                    height={64}
+                    className="rounded-full border-2 border-[#2edc86] shadow-sm" // Green border and subtle shadow
+                />
                 <div>
-                    <label className="block text-sm font-medium text-gray-700">Shop Name</label>
-                    <input
-                        type="text"
-                        value={shopName}
-                        onChange={(e) => setShopName(e.target.value)}
-                        className="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                        required
-                    />
+                    <p className="text-xl font-semibold text-gray-900">{profile.storeName}</p>
+                    <p className="text-sm text-gray-600">{profile.email}</p>
                 </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        rows="3"
-                        className="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                        required
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">WhatsApp Number</label>
-                    <input
-                        type="tel"
-                        value={whatsapp}
-                        onChange={(e) => setWhatsapp(e.target.value)}
-                        className="block w-full px-4 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
-                        required
-                    />
-                </div>
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 border border-transparent rounded-md shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-                >
-                    {loading ? 'Saving...' : 'Save Changes'}
-                </button>
-            </form>
-            <ToastNotification
-                message={toast.message}
-                type={toast.type}
-                isVisible={toast.isVisible}
-                onDismiss={() => setToast({ ...toast, isVisible: false })}
-            />
+            </div>
+
+            <div className="space-y-3 text-gray-700">
+                <p>
+                    <span className="font-medium text-gray-800">Description:</span> {profile.description || 'No description provided.'}
+                </p>
+                <p>
+                    <span className="font-medium text-gray-800">WhatsApp:</span> {profile.whatsapp || 'Not provided'}
+                    {whatsappUrl && (
+                        <a 
+                            href={whatsappUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="ml-2 text-green-500 transition-colors hover:text-green-600"
+                            aria-label="Chat on WhatsApp"
+                        >
+                            <FaWhatsapp className="inline-block text-xl" />
+                        </a>
+                    )}
+                </p>
+                {/* Add other profile details here as needed, e.g., address, social links */}
+            </div>
         </div>
     );
 }

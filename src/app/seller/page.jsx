@@ -23,7 +23,8 @@ export default function SellerDashboardHome() {
       if (authUser) {
         setUser(authUser);
       } else {
-        router.push('/auth/login');
+        // Redirect to the centralized login page
+        router.push('/auth?mode=login');
       }
     });
 
@@ -53,7 +54,8 @@ export default function SellerDashboardHome() {
       
       // Calculate total revenue from the fetched orders
       const revenue = ordersData.reduce((sum, order) => {
-        const orderTotal = order.items.reduce((itemSum, item) => itemSum + item.price, 0);
+        // Assuming each order item has a 'price' field
+        const orderTotal = order.items ? order.items.reduce((itemSum, item) => itemSum + item.price, 0) : 0;
         return sum + orderTotal;
       }, 0);
       setTotalRevenue(revenue);
@@ -83,32 +85,32 @@ export default function SellerDashboardHome() {
       title: 'Total Products',
       count: totalProducts,
       icon: <FaBox size={24} />,
-      iconColor: 'bg-[#D9EEDA] text-[#25D366]',
+      iconColor: 'bg-green-100 text-green-600', // Updated to match theme
     },
     {
       title: 'Total Revenue',
       count: formatCurrency(totalRevenue),
       icon: <FaDollarSign size={24} />,
-      iconColor: 'bg-[#FFF8E1] text-[#FBCF03]',
+      iconColor: 'bg-yellow-100 text-yellow-600', // Updated to match theme
     },
     {
       title: 'Total Orders',
       count: totalOrders,
       icon: <FaShoppingCart size={24} />,
-      iconColor: 'bg-[#DDECFD] text-[#2597F3]',
+      iconColor: 'bg-blue-100 text-blue-600', // Updated to match theme
     },
   ];
 
   if (loading || !user) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-lg text-gray-600">
+      <div className="flex items-center justify-center min-h-screen text-lg text-gray-600 bg-[#f0f2f5]">
         Loading dashboard...
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-6 text-[#1E1E1E] transition-colors duration-300 bg-[#E8F8E3] md:p-10">
+    <main className="min-h-screen p-6 font-sans bg-[#f0f2f5] md:p-10"> {/* Updated background color */}
       <div className="mx-auto space-y-10 max-w-7xl">
         {/* Header */}
         <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
@@ -121,7 +123,8 @@ export default function SellerDashboardHome() {
             <input
               type="text"
               placeholder="Search products, orders..."
-              className="w-full rounded-full border border-gray-300 bg-white py-3 pl-12 pr-4 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-[#77CF79] transition-all"
+              className="w-full rounded-full border border-gray-300 bg-white py-3 pl-12 pr-4 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-[#2edc86] transition-all" 
+
             />
             <svg
               className="absolute w-5 h-5 text-gray-400 -translate-y-1/2 left-4 top-1/2"

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
-import { FaGoogle, FaStore } from 'react-icons/fa';
+import { FaGoogle } from 'react-icons/fa'; // For Google sign-in icon
+import { Eye, EyeOff } from 'lucide-react'; // Import eye icons for password toggle
 
 // Import the shared Firebase instances
 import { auth, db } from '@/app/firebase/config';
+import ToastNotification from "@/app/components/ToastNotification"; // Assuming this path is correct for ToastNotification
 
 export default function RegisterForm() {
     const [email, setEmail] = useState('');
@@ -18,6 +20,9 @@ export default function RegisterForm() {
     const [error, setError] = useState('');
     const [passwordErrors, setPasswordErrors] = useState([]); // State for password validation errors
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false); // State for password visibility
+    const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false }); // Toast state
+
     const router = useRouter();
 
     // Password validation logic
@@ -47,14 +52,20 @@ export default function RegisterForm() {
         setPasswordErrors(validatePassword(newPassword)); // Validate on change
     };
 
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
+
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
+        setToast({ ...toast, isVisible: false }); // Hide previous toast
         setLoading(true);
 
         // Validate all fields
         if (!email || !password || !storeName || !contactNumber) {
             setError('All fields are required.');
+            setToast({ message: 'All fields are required.', type: 'error', isVisible: true });
             setLoading(false);
             return;
         }
@@ -64,6 +75,7 @@ export default function RegisterForm() {
         if (currentPasswordErrors.length > 0) {
             setPasswordErrors(currentPasswordErrors); // Update state with all errors
             setError('Please fix the password errors.'); // General error message
+            setToast({ message: 'Please fix the password errors.', type: 'error', isVisible: true });
             setLoading(false);
             return;
         }
@@ -82,11 +94,15 @@ export default function RegisterForm() {
                 isSeller: true, // All registered accounts are now sellers
             });
 
+            setToast({ message: 'Registration successful! Redirecting...', type: 'success', isVisible: true });
             // Step 3: Redirect to the role-based redirector
-            router.push('/auth?mode=redirect');
+            setTimeout(() => {
+                router.push('/auth?mode=redirect');
+            }, 1500); // Give time for toast to be seen
 
         } catch (err) {
             setError('Failed to register. Please try again.');
+            setToast({ message: `Registration failed: ${err.message}`, type: 'error', isVisible: true });
             console.error('Registration Error:', err.message);
         } finally {
             setLoading(false);
@@ -95,7 +111,7 @@ export default function RegisterForm() {
 
     // Placeholder for Google Sign-in (requires Firebase Google Auth setup)
     const handleGoogleSignIn = () => {
-        setError('Google Sign-in not yet implemented.');
+        setToast({ message: 'Google Sign-in not yet implemented.', type: 'info', isVisible: true });
         console.log('Google Sign-in clicked');
     };
 
@@ -145,15 +161,25 @@ export default function RegisterForm() {
                         </div>
                         <div>
                             <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">Password</label>
-                            <input
-                                type="password"
-                                id="password"
-                                value={password}
-                                onChange={handlePasswordChange} // Use the new handler
-                                required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
-                                placeholder="Set your password"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    id="password"
+                                    value={password}
+                                    onChange={handlePasswordChange}
+                                    required
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all pr-10" // Added pr-10 for icon space
+                                    placeholder="Set your password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={togglePasswordVisibility}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                             {passwordErrors.length > 0 && (
                                 <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
                                     {passwordErrors.map((err, index) => (
@@ -213,6 +239,12 @@ export default function RegisterForm() {
                     </button>
                 </div>
             </div>
+            <ToastNotification
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onDismiss={() => setToast({ ...toast, isVisible: false })}
+            />
         </div>
     );
 }

@@ -22,14 +22,14 @@ export default function AddProductPage() {
       isVisible: true,
     });
     
-    // Redirect to the dashboard after a short delay
+    // Redirect to the manage products page after a short delay
     setTimeout(() => {
-      router.push("/seller/dashboard");
+      router.push("/seller/manage-products"); // Changed to manage-products as per common flow
     }, 1500);
   };
 
   return (
-    <div className="flex justify-center min-h-screen p-6 font-sans antialiased bg-gray-100">
+    <div className="flex justify-center min-h-screen p-6 font-sans antialiased bg-[#f0f2f5]"> {/* Updated background color */}
       <div className="w-full max-w-xl">
         <ProductForm onSubmit={handleProductSubmitted} />
       </div>

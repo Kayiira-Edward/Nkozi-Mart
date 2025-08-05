@@ -2,12 +2,10 @@
 
 import ProductCard from './ProductCard'; // Assuming a ProductCard component exists in the same directory
 
-// The Header component import has been removed as it was causing a build error.
-
 export default function ProductList({ products, whatsapp, onEdit, onDelete }) {
   if (!products || products.length === 0) {
     return (
-      <div className="p-8 text-center text-gray-500 border-2 border-gray-300 border-dashed rounded-xl">
+      <div className="p-8 text-center text-gray-500 bg-white border-2 border-gray-300 border-dashed shadow-md rounded-xl"> {/* Added styling for consistency */}
         <p>You have not added any products yet.</p>
       </div>
     );

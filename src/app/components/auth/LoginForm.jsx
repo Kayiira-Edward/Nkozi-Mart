@@ -5,26 +5,41 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
 import { FaGoogle } from 'react-icons/fa'; // For Google sign-in icon
+import { Eye, EyeOff } from 'lucide-react'; // Import eye icons for password toggle
 
 // Import the shared Firebase instances
 import { auth } from '@/app/firebase/config';
+import ToastNotification from "@/app/components/ToastNotification"; // Assuming this path is correct for ToastNotification
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false); // State for password visibility
+    const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false }); // Toast state
+
     const router = useRouter();
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(!showPassword);
+    };
 
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
+        setToast({ ...toast, isVisible: false }); // Hide previous toast
         setLoading(true);
+
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            router.push('/auth?mode=redirect'); // Redirect to AuthRedirector
+            setToast({ message: 'Login successful! Redirecting...', type: 'success', isVisible: true });
+            setTimeout(() => {
+                router.push('/auth?mode=redirect'); // Redirect to AuthRedirector
+            }, 1500); // Give time for toast to be seen
         } catch (err) {
             setError('Failed to sign in. Please check your email and password.');
+            setToast({ message: `Login failed: ${err.message}`, type: 'error', isVisible: true });
             console.error('Login Error:', err.message);
         } finally {
             setLoading(false);
@@ -33,7 +48,7 @@ export default function LoginForm() {
 
     // Placeholder for Google Sign-in (requires Firebase Google Auth setup)
     const handleGoogleSignIn = () => {
-        setError('Google Sign-in not yet implemented.');
+        setToast({ message: 'Google Sign-in not yet implemented.', type: 'info', isVisible: true });
         console.log('Google Sign-in clicked');
     };
 
@@ -83,15 +98,25 @@ export default function LoginForm() {
                         </div>
                         <div>
                             <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-700">Password</label>
-                            <input
-                                type="password"
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
-                                placeholder="Enter password"
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    id="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all pr-10" // Added pr-10 for icon space
+                                    placeholder="Enter password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={togglePasswordVisibility}
+                                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                         </div>
                         {error && <p className="text-sm text-center text-red-600">{error}</p>}
                         <button
@@ -120,6 +145,12 @@ export default function LoginForm() {
                     </button>
                 </div>
             </div>
+            <ToastNotification
+                message={toast.message}
+                type={toast.type}
+                isVisible={toast.isVisible}
+                onDismiss={() => setToast({ ...toast, isVisible: false })}
+            />
         </div>
     );
 }

@@ -53,9 +53,9 @@ export default function Sidebar() {
   const navItems = [
     { name: 'Dashboard', href: '/seller', icon: <LucideLayoutDashboard /> },
     { name: 'Add Product', href: '/seller/add-product', icon: <LucidePackagePlus /> },
-    { name: 'Manage Products', href: '/seller/dashboard', icon: <LucideListOrdered /> },
+    { name: 'Manage Products', href: '/seller/manage-products', icon: <LucideListOrdered /> }, // Corrected path to manage-products
     // Use sellerId to create a dynamic link
-    { name: 'My Store', href: sellerId ? `/store/${sellerId}` : '#', icon: <LucideUser /> },
+    { name: 'My Store', href: sellerId ? `/seller/${sellerId}` : '#', icon: <LucideUser /> }, // Link to public seller page
     { name: 'Edit Profile', href: '/seller/profile', icon: <LucideSettings /> },
     { name: 'Share Store', href: '/seller/share', icon: <LucideQrCode /> },
   ];
@@ -65,7 +65,8 @@ export default function Sidebar() {
       {/* Desktop Sidebar */}
       <div className="fixed top-0 left-0 flex-col hidden w-64 h-full bg-white shadow-md md:flex" style={{ borderRight: '1px solid #e0e0e0' }}>
         <Link href="/" className="flex items-center justify-center h-20">
-          <img src="/logo.png" alt="Logo" className="w-auto h-12" />
+          {/* Ensure you have a logo.png in your public directory */}
+          <img src="/logo.png" alt="Ugbuy Logo" className="w-auto h-12" />
         </Link>
         <div className="flex-grow p-4">
           <nav className="space-y-1">
@@ -75,7 +76,7 @@ export default function Sidebar() {
                   className={cn(
                     'flex items-center rounded-md px-4 py-3 transition-colors',
                     pathname === item.href
-                      ? 'bg-emerald-50 text-emerald-600 font-semibold'
+                      ? 'bg-[#e6fcf0] text-[#2edc86] font-semibold' // Updated active background and text color
                       : 'text-gray-700 hover:bg-gray-50'
                   )}
                 >
@@ -89,7 +90,7 @@ export default function Sidebar() {
         <div className="p-4 border-t border-gray-200">
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-gray-600 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#2edc86]" // Updated focus ring color
           >
             <LucideLogOut className="w-4 h-4 mr-2" />
             Logout
@@ -105,7 +106,7 @@ export default function Sidebar() {
               <div
               className={cn(
                 'flex flex-col items-center justify-center p-2 transition-colors',
-                pathname === item.href ? 'text-emerald-600' : 'text-gray-500 hover:text-emerald-600'
+                pathname === item.href ? 'text-[#2edc86]' : 'text-gray-500 hover:text-[#2edc86]' // Updated active and hover text color
               )}
             >
               <span className="text-xl">{item.icon}</span>

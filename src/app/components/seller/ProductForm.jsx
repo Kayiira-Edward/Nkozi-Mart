@@ -158,52 +158,55 @@ export default function ProductForm({ onSubmit, initialData }) {
   };
 
   return (
-    <div className="relative bg-[#E8F8F0] p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-xl p-6 bg-white shadow-[0_0px_60px_-15px_rgba(0,0,0,0.3)] rounded-3xl sm:p-8 lg:p-10">
+    <div className="relative bg-[#f0f2f5] p-4 sm:p-6 lg:p-8"> {/* Updated background color */}
+      <div className="w-full max-w-xl p-6 bg-white shadow-lg rounded-3xl sm:p-8 lg:p-10"> {/* Adjusted shadow for consistency */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <h2 className="text-3xl font-bold text-center text-[#2F4F4F]">
+          <h2 className="text-3xl font-bold text-center text-gray-800"> {/* Updated text color */}
             {initialData ? 'Update Product' : 'Add Product'}
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#7D7D7D] font-['Roboto']">Product Name</label>
+              <label className="block text-sm font-medium text-gray-700">Product Name</label> {/* Updated text color */}
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#85D4A2] bg-[#F7F7F7] text-[#2F4F4F] placeholder-[#B0B0B0] font-['Roboto']"
+                className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2edc86] bg-white text-gray-800 placeholder-gray-400" 
+
                 placeholder="e.g., iPhone 14"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#7D7D7D] font-['Roboto']">Price (UGX)</label>
+              <label className="block text-sm font-medium text-gray-700">Price (UGX)</label> {/* Updated text color */}
               <input
                 type="number"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#85D4A2] bg-[#F7F7F7] text-[#2F4F4F] placeholder-[#B0B0B0] font-['Roboto']"
+                className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2edc86] bg-white text-gray-800 placeholder-gray-400" 
                 placeholder="e.g., 1200000"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#7D7D7D] font-['Roboto']">Description</label>
+              <label className="block text-sm font-medium text-gray-700">Description</label> {/* Updated text color */}
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl h-24 resize-none focus:outline-none focus:ring-4 focus:ring-[#85D4A2] bg-[#F7F7F7] text-[#2F4F4F] placeholder-[#B0B0B0] font-['Roboto']"
+                className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl h-24 resize-none focus:outline-none focus:ring-2 focus:ring-[#2edc86] bg-white text-gray-800 placeholder-gray-400" 
+
                 placeholder="Write a short product description..."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#7D7D7D] font-['Roboto']">Product Image</label>
+              <label className="block text-sm font-medium text-gray-700">Product Image</label> {/* Updated text color */}
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleImageChange}
-                className="w-full mt-1 text-[#7D7D7D] font-['Roboto'] file:mr-4 file:py-2 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#A6D4A2] file:text-white hover:file:bg-[#91C89F] transition-colors cursor-pointer"
+                className="w-full mt-1 text-gray-700 file:mr-4 file:py-2 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#2edc86] file:text-white hover:file:bg-[#25b36b] transition-colors cursor-pointer" 
+
               />
               {previewURL && (
                 <div className="relative w-full h-40 mt-4 overflow-hidden shadow-inner rounded-xl">
@@ -221,7 +224,7 @@ export default function ProductForm({ onSubmit, initialData }) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 text-white bg-[#5CB85C] rounded-2xl font-bold font-['Roboto'] hover:bg-[#4CAF50] transition-colors shadow-lg transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 text-white bg-[#2edc86] rounded-2xl font-bold hover:bg-[#25b36b] transition-colors shadow-lg transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" 
           >
             {loading ? 'Submitting...' : (initialData ? 'Update Product' : 'Add Product')}
           </button>
