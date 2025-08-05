@@ -9,9 +9,12 @@ export default function Footer() {
         <div className="space-y-6">
           {/* Brand */}
           <div>
-            <h2 className="text-xl font-semibold text-[#181a1f]">Hello! Uganda</h2>
-            <p className="mt-1 text-sm">All of your conversations, Work items and tools into one place.</p>
-          </div>
+  <h2 className="text-xl font-semibold text-[#181a1f]">ShopLink Uganda</h2>
+  <p className="mt-1 text-sm text-gray-600">
+    Discover. Connect. Order — all in one place. Bringing Uganda’s shops closer to you.
+  </p>
+</div>
+
 
           {/* Links */}
           <div className="flex flex-wrap justify-center gap-6 text-sm font-medium">
