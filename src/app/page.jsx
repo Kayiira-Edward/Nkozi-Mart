@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ChevronLeft, ChevronRight } from "lucide-react"; // Import ChevronLeft and ChevronRight
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "./providers/CartProvider";
@@ -27,6 +27,14 @@ const banners = [
     bgColor: "from-green-500 to-green-600",
     img: "/assets/images/one.jpg",
     sellerName: "Campus Mart",
+  },
+  { // Added a third banner
+    id: 3,
+    title: "New Arrivals!",
+    description: "Discover the latest products in our store.",
+    bgColor: "from-blue-400 to-blue-600",
+    img: "/assets/images/one.jpg", // Placeholder image
+    sellerName: "Fresh Finds",
   },
 ];
 
@@ -54,6 +62,7 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [products, setProducts] = useState([]);
+  // Removed [loading, setLoading] = useState(true);
   const searchInputRef = useRef(null);
 
   // Function to shuffle an array to create a dynamic feed
@@ -76,11 +85,25 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [banners.length]);
 
+  // Handle manual banner navigation
+  const goToNextBanner = () => {
+    setCurrentBannerIndex((prevIndex) =>
+      prevIndex === banners.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  const goToPreviousBanner = () => {
+    setCurrentBannerIndex((prevIndex) =>
+      prevIndex === 0 ? banners.length - 1 : prevIndex - 1
+    );
+  };
+
   // Effect to fetch products from Firestore and shuffle them
   useEffect(() => {
     // Ensure Firestore is initialized before fetching
     if (!db) {
       console.error("Firestore is not initialized.");
+      // Removed setLoading(false);
       return;
     }
 
@@ -93,8 +116,10 @@ export default function HomePage() {
       
       // Shuffle the products to create a dynamic feed
       setProducts(shuffleArray(fetchedProducts));
+      // Removed setLoading(false);
     }, (error) => {
       console.error("Error fetching products from Firestore: ", error);
+      // Removed setLoading(false);
     });
 
     // Clean up the listener when the component unmounts
@@ -131,22 +156,30 @@ export default function HomePage() {
         (product.color && product.color.toLowerCase().includes(lowerCaseSearchTerm))
     );
   }
-  
+
+  // Removed Display loading screen while fetching data
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-screen text-lg font-medium text-gray-500">
+  //       Loading amazing products...
+  //     </div>
+  //   );
+  // }
 
   return (
     <main className="min-h-screen pb-24 bg-[#f0f2f5] font-sans">
       {/* Main Navigation Bar (Top for Desktop, Hamburger for Mobile) */}
       <nav className="sticky top-0 z-50 flex items-center justify-between p-4 bg-white shadow-md">
-        {/* Logo - Updated to "ShopLink" */}
+        {/* Logo - Updated to "Ugbuy" */}
         <Link href="/" className="flex items-center flex-shrink-0 space-x-2">
           <Image
             src="/assets/images/one.jpg"
-            alt="ShopLink Logo"
+            alt="Ugbuy Logo"
             width={40}
             height={40}
             className="rounded-full"
           />
-          <span className="text-xl font-bold text-[#181a1f]">ShopLink</span>
+          <span className="text-xl font-bold text-[#181a1f]">Ugbuy</span>
         </Link>
 
         {/* Desktop Menu & Cart */}
@@ -158,13 +191,13 @@ export default function HomePage() {
             About
           </Link>
           <Link
-            href="/auth?mode=register" // Updated link for "Become a Seller"
+            href="/become-seller"
             className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
           >
             Become a Seller
           </Link>
           <Link
-            href="/auth?mode=login" // Updated link for "Sign In"
+            href="/auth?mode=login"
             className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
           >
             Sign In
@@ -218,13 +251,13 @@ export default function HomePage() {
               About
             </Link>
             <Link
-              href="/auth?mode=register" // Updated link for "Become a Seller"
+              href="/become-seller"
               className="w-full px-3 py-2 text-lg font-semibold text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
             >
               Become a Seller
             </Link>
             <Link
-              href="/auth?mode=login" // Updated link for "Sign In"
+              href="/auth?mode=login"
               className="w-full px-3 py-2 text-lg font-semibold text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
             >
               Sign In
@@ -290,12 +323,27 @@ export default function HomePage() {
                     alt="Order steps"
                     layout="fill"
                     objectFit="cover"
-                    className="object-contain"
+                    className="rounded-xl" // Applied rounded-xl here
                   />
                 </div>
               </div>
             ))}
           </div>
+          {/* Navigation Arrows */}
+          <button
+            onClick={goToPreviousBanner}
+            className="absolute p-2 text-gray-700 transition-colors -translate-y-1/2 bg-white rounded-full shadow-md left-2 top-1/2 bg-opacity-70 hover:bg-opacity-90"
+            aria-label="Previous banner"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={goToNextBanner}
+            className="absolute p-2 text-gray-700 transition-colors -translate-y-1/2 bg-white rounded-full shadow-md right-2 top-1/2 bg-opacity-70 hover:bg-opacity-90"
+            aria-label="Next banner"
+          >
+            <ChevronRight size={24} />
+          </button>
           {/* Optional: Add dot indicators for carousel */}
           <div className="absolute flex space-x-2 -translate-x-1/2 bottom-4 left-1/2">
             {banners.map((_, index) => (
