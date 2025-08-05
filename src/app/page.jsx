@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X, ChevronLeft, ChevronRight } from "lucide-react"; // Import ChevronLeft and ChevronRight
+import { Menu, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "./providers/CartProvider";
@@ -62,7 +62,6 @@ export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [products, setProducts] = useState([]);
-  // Removed [loading, setLoading] = useState(true);
   const searchInputRef = useRef(null);
 
   // Function to shuffle an array to create a dynamic feed
@@ -103,7 +102,6 @@ export default function HomePage() {
     // Ensure Firestore is initialized before fetching
     if (!db) {
       console.error("Firestore is not initialized.");
-      // Removed setLoading(false);
       return;
     }
 
@@ -116,10 +114,8 @@ export default function HomePage() {
       
       // Shuffle the products to create a dynamic feed
       setProducts(shuffleArray(fetchedProducts));
-      // Removed setLoading(false);
     }, (error) => {
       console.error("Error fetching products from Firestore: ", error);
-      // Removed setLoading(false);
     });
 
     // Clean up the listener when the component unmounts
@@ -156,15 +152,7 @@ export default function HomePage() {
         (product.color && product.color.toLowerCase().includes(lowerCaseSearchTerm))
     );
   }
-
-  // Removed Display loading screen while fetching data
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen text-lg font-medium text-gray-500">
-  //       Loading amazing products...
-  //     </div>
-  //   );
-  // }
+  
 
   return (
     <main className="min-h-screen pb-24 bg-[#f0f2f5] font-sans">
@@ -190,9 +178,10 @@ export default function HomePage() {
           >
             About
           </Link>
+          {/* Updated "Become a Seller" to a button-like link */}
           <Link
-            href="/become-seller"
-            className="text-[#4b5563] transition-colors duration-200 hover:text-[#2edc86]"
+            href="/auth?mode=register"
+            className="px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 bg-[#2edc86] rounded-full shadow-md hover:bg-[#25b36b]"
           >
             Become a Seller
           </Link>
@@ -250,9 +239,10 @@ export default function HomePage() {
             >
               About
             </Link>
+            {/* Updated "Become a Seller" to a button-like link in mobile menu */}
             <Link
-              href="/become-seller"
-              className="w-full px-3 py-2 text-lg font-semibold text-gray-800 transition-colors duration-200 rounded-md hover:text-[#2edc86] hover:bg-gray-50"
+              href="/auth?mode=register"
+              className="w-full px-3 py-2 text-lg font-semibold text-white transition-colors duration-200 bg-[#2edc86] rounded-md shadow-md hover:bg-[#25b36b] text-center"
             >
               Become a Seller
             </Link>
@@ -323,7 +313,7 @@ export default function HomePage() {
                     alt="Order steps"
                     layout="fill"
                     objectFit="cover"
-                    className="rounded-xl" // Applied rounded-xl here
+                    className="rounded-xl"
                   />
                 </div>
               </div>

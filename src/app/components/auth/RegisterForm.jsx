@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
-import { FaGoogle, FaStore } from 'react-icons/fa'; // Added FaGoogle for the Google button
+import { FaGoogle, FaStore } from 'react-icons/fa';
 
 // Import the shared Firebase instances
 import { auth, db } from '@/app/firebase/config';
@@ -16,15 +16,54 @@ export default function RegisterForm() {
     const [storeName, setStoreName] = useState('');
     const [contactNumber, setContactNumber] = useState('');
     const [error, setError] = useState('');
+    const [passwordErrors, setPasswordErrors] = useState([]); // State for password validation errors
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+
+    // Password validation logic
+    const validatePassword = (pwd) => {
+        const errors = [];
+        if (pwd.length < 8) {
+            errors.push('Password must be at least 8 characters long.');
+        }
+        if (!/[A-Z]/.test(pwd)) {
+            errors.push('Password must contain at least one uppercase letter.');
+        }
+        if (!/[a-z]/.test(pwd)) {
+            errors.push('Password must contain at least one lowercase letter.');
+        }
+        if (!/[0-9]/.test(pwd)) {
+            errors.push('Password must contain at least one number.');
+        }
+        if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
+            errors.push('Password must contain at least one special character.');
+        }
+        return errors;
+    };
+
+    const handlePasswordChange = (e) => {
+        const newPassword = e.target.value;
+        setPassword(newPassword);
+        setPasswordErrors(validatePassword(newPassword)); // Validate on change
+    };
 
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+
+        // Validate all fields
         if (!email || !password || !storeName || !contactNumber) {
             setError('All fields are required.');
+            setLoading(false);
+            return;
+        }
+
+        // Run password validation before submitting
+        const currentPasswordErrors = validatePassword(password);
+        if (currentPasswordErrors.length > 0) {
+            setPasswordErrors(currentPasswordErrors); // Update state with all errors
+            setError('Please fix the password errors.'); // General error message
             setLoading(false);
             return;
         }
@@ -110,11 +149,18 @@ export default function RegisterForm() {
                                 type="password"
                                 id="password"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={handlePasswordChange} // Use the new handler
                                 required
                                 className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
                                 placeholder="Set your password"
                             />
+                            {passwordErrors.length > 0 && (
+                                <ul className="mt-2 text-sm text-red-600 list-disc list-inside">
+                                    {passwordErrors.map((err, index) => (
+                                        <li key={index}>{err}</li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
                         <div>
                             <label htmlFor="storeName" className="block mb-2 text-sm font-medium text-gray-700">Store Name</label>
@@ -143,7 +189,7 @@ export default function RegisterForm() {
                         {error && <p className="text-sm text-center text-red-600">{error}</p>}
                         <button
                             type="submit"
-                            disabled={loading}
+                            disabled={loading || passwordErrors.length > 0} // Disable if loading or password has errors
                             className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-semibold text-white bg-[#2edc86] hover:bg-[#25b36b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2edc86] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             {loading ? 'Registering...' : 'Register Shop →'}
