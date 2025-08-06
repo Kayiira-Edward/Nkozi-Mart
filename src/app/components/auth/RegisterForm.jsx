@@ -1,16 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Import useEffect
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import Link from 'next/link';
-import { FaGoogle } from 'react-icons/fa'; // For Google sign-in icon
-import { Eye, EyeOff } from 'lucide-react'; // Import eye icons for password toggle
+import { FaGoogle } from 'react-icons/fa';
+import { Eye, EyeOff } from 'lucide-react';
 
 // Import the shared Firebase instances
 import { auth, db } from '@/app/firebase/config';
-import ToastNotification from "@/app/components/ToastNotification"; // Assuming this path is correct for ToastNotification
+import ToastNotification from "@/app/components/ToastNotification";
 
 export default function RegisterForm() {
     const [email, setEmail] = useState('');
@@ -18,12 +18,21 @@ export default function RegisterForm() {
     const [storeName, setStoreName] = useState('');
     const [contactNumber, setContactNumber] = useState('');
     const [error, setError] = useState('');
-    const [passwordErrors, setPasswordErrors] = useState([]); // State for password validation errors
+    const [passwordErrors, setPasswordErrors] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false); // State for password visibility
-    const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false }); // Toast state
+    const [showPassword, setShowPassword] = useState(false);
+    const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false });
 
     const router = useRouter();
+
+    // Add a useEffect to log the 'auth' object on client-side mount
+    // This is CRITICAL for debugging if 'auth' is null in the browser
+    useEffect(() => {
+        console.log('RegisterForm mounted. Auth object:', auth);
+        if (!auth) {
+            setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
+        }
+    }, []); // Run once on mount
 
     // Password validation logic
     const validatePassword = (pwd) => {
@@ -40,7 +49,7 @@ export default function RegisterForm() {
         if (!/[0-9]/.test(pwd)) {
             errors.push('Password must contain at least one number.');
         }
-        if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) {
+        if (!/[!@#$%^&*_(),.?":{}|<>]/.test(pwd)) {
             errors.push('Password must contain at least one special character.');
         }
         return errors;
@@ -61,6 +70,15 @@ export default function RegisterForm() {
         setError('');
         setToast({ ...toast, isVisible: false }); // Hide previous toast
         setLoading(true);
+
+        // Explicitly check if auth is available before proceeding
+        if (!auth) {
+            setError('Firebase authentication service is not available.');
+            setToast({ message: 'Authentication service is not available. Please try again later.', type: 'error', isVisible: true });
+            setLoading(false);
+            console.error('Registration Error: Firebase auth object is null.');
+            return; // Stop execution if auth is null
+        }
 
         // Validate all fields
         if (!email || !password || !storeName || !contactNumber) {
@@ -168,7 +186,7 @@ export default function RegisterForm() {
                                     value={password}
                                     onChange={handlePasswordChange}
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all pr-10" // Added pr-10 for icon space
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all pr-10"
                                     placeholder="Set your password"
                                 />
                                 <button
@@ -215,7 +233,7 @@ export default function RegisterForm() {
                         {error && <p className="text-sm text-center text-red-600">{error}</p>}
                         <button
                             type="submit"
-                            disabled={loading || passwordErrors.length > 0} // Disable if loading or password has errors
+                            disabled={loading || passwordErrors.length > 0}
                             className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-semibold text-white bg-[#2edc86] hover:bg-[#25b36b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2edc86] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             {loading ? 'Registering...' : 'Register Shop →'}

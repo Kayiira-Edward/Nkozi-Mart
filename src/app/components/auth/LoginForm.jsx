@@ -1,25 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Import useEffect
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
-import { FaGoogle } from 'react-icons/fa'; // For Google sign-in icon
-import { Eye, EyeOff } from 'lucide-react'; // Import eye icons for password toggle
+import { FaGoogle } from 'react-icons/fa';
+import { Eye, EyeOff } from 'lucide-react';
 
 // Import the shared Firebase instances
-import { auth } from '@/app/firebase/config';
-import ToastNotification from "@/app/components/ToastNotification"; // Assuming this path is correct for ToastNotification
+import { auth } from '@/app/firebase/config'; // Import auth
+import ToastNotification from "@/app/components/ToastNotification";
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showPassword, setShowPassword] = useState(false); // State for password visibility
-    const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false }); // Toast state
+    const [showPassword, setShowPassword] = useState(false);
+    const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false });
 
     const router = useRouter();
+
+    // Add a useEffect to log the 'auth' object on client-side mount
+    // This is CRITICAL for debugging if 'auth' is null in the browser
+    useEffect(() => {
+        console.log('LoginForm mounted. Auth object:', auth);
+        if (!auth) {
+            setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
+        }
+    }, []); // Run once on mount
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -31,12 +40,21 @@ export default function LoginForm() {
         setToast({ ...toast, isVisible: false }); // Hide previous toast
         setLoading(true);
 
+        // Explicitly check if auth is available before proceeding
+        if (!auth) {
+            setError('Firebase authentication service is not available.');
+            setToast({ message: 'Authentication service is not available. Please try again later.', type: 'error', isVisible: true });
+            setLoading(false);
+            console.error('Login Error: Firebase auth object is null.');
+            return; // Stop execution if auth is null
+        }
+
         try {
             await signInWithEmailAndPassword(auth, email, password);
             setToast({ message: 'Login successful! Redirecting...', type: 'success', isVisible: true });
             setTimeout(() => {
-                router.push('/auth?mode=redirect'); // Redirect to AuthRedirector
-            }, 1500); // Give time for toast to be seen
+                router.push('/auth?mode=redirect');
+            }, 1500);
         } catch (err) {
             setError('Failed to sign in. Please check your email and password.');
             setToast({ message: `Login failed: ${err.message}`, type: 'error', isVisible: true });
@@ -46,7 +64,6 @@ export default function LoginForm() {
         }
     };
 
-    // Placeholder for Google Sign-in (requires Firebase Google Auth setup)
     const handleGoogleSignIn = () => {
         setToast({ message: 'Google Sign-in not yet implemented.', type: 'info', isVisible: true });
         console.log('Google Sign-in clicked');
@@ -105,7 +122,7 @@ export default function LoginForm() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all pr-10" // Added pr-10 for icon space
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all pr-10"
                                     placeholder="Enter password"
                                 />
                                 <button

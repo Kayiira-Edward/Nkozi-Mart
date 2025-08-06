@@ -1,11 +1,9 @@
 // src/app/firebase/config.js
-import { initializeApp } from "firebase/app";
-import { getAnalytics, isSupported } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -13,17 +11,38 @@ const firebaseConfig = {
   storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Keep this line ONLY if you have a measurementId
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Check if firebaseConfig is valid before initializing
+const isConfigValid = firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId;
 
-// Initialize Firebase Analytics only if supported on the client-side
-let analytics = null;
-if (typeof window !== 'undefined' && isSupported()) {
-  analytics = getAnalytics(app);
+let app;
+if (isConfigValid) {
+  try {
+    app = initializeApp(firebaseConfig);
+    // console.log("Firebase app initialized successfully."); // Removed for cleaner output
+  } catch (error) {
+    console.error("Error initializing Firebase app:", error.message);
+    // This error should ideally not happen if isConfigValid is true and .env is correct
+  }
+} else {
+  console.error("Firebase configuration is incomplete or invalid. Check your .env.local file and ensure all NEXT_PUBLIC_FIREBASE_ variables are set correctly.");
 }
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+// Initialize Firebase services only if the app was successfully initialized
+let auth = null;
+let db = null;
+let storage = null;
+
+if (app) {
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+} else {
+  // This means the app failed to initialize, so auth, db, storage will be null
+  console.error("Firebase app not initialized, cannot get auth, db, or storage instances.");
+}
+
+// Export the initialized services
+export { auth, db, storage };
