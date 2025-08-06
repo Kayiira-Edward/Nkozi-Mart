@@ -8,9 +8,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart } from "@fortawesome/free-solid-svg-icons";
 import { useCart } from "./providers/CartProvider";
 import { collection, onSnapshot } from "firebase/firestore";
-import { db } from "./firebase/config"; // Import your Firestore instance
+import { db } from "./firebase/config";
 
-// Updated banners with seller-specific data and wide images
 const banners = [
   {
     id: 1,
@@ -28,12 +27,12 @@ const banners = [
     img: "/assets/images/one.jpg",
     sellerName: "Campus Mart",
   },
-  { // Added a third banner
+  {
     id: 3,
     title: "New Arrivals!",
     description: "Discover the latest products in our store.",
     bgColor: "from-blue-400 to-blue-600",
-    img: "/assets/images/one.jpg", // Placeholder image
+    img: "/assets/images/one.jpg",
     sellerName: "Fresh Finds",
   },
 ];
@@ -64,7 +63,6 @@ export default function HomePage() {
   const [products, setProducts] = useState([]);
   const searchInputRef = useRef(null);
 
-  // Function to shuffle an array to create a dynamic feed
   const shuffleArray = (array) => {
     let newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -74,7 +72,6 @@ export default function HomePage() {
     return newArray;
   };
 
-  // Effect for banner carousel
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentBannerIndex((prevIndex) =>
@@ -84,7 +81,6 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [banners.length]);
 
-  // Handle manual banner navigation
   const goToNextBanner = () => {
     setCurrentBannerIndex((prevIndex) =>
       prevIndex === banners.length - 1 ? 0 : prevIndex + 1
@@ -97,28 +93,23 @@ export default function HomePage() {
     );
   };
 
-  // Effect to fetch products from Firestore and shuffle them
   useEffect(() => {
-    // Ensure Firestore is initialized before fetching
     if (!db) {
       console.error("Firestore is not initialized.");
       return;
     }
 
-    // `onSnapshot` creates a real-time listener for the "products" collection
     const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
       const fetchedProducts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
       }));
       
-      // Shuffle the products to create a dynamic feed
       setProducts(shuffleArray(fetchedProducts));
     }, (error) => {
       console.error("Error fetching products from Firestore: ", error);
     });
 
-    // Clean up the listener when the component unmounts
     return () => unsubscribe();
   }, []);
 
@@ -136,7 +127,6 @@ export default function HomePage() {
     }
   };
 
-  // Dynamic filtering of products based on state
   let filteredProducts = products;
   if (selectedCategory !== "All") {
     filteredProducts = filteredProducts.filter(
@@ -152,13 +142,10 @@ export default function HomePage() {
         (product.color && product.color.toLowerCase().includes(lowerCaseSearchTerm))
     );
   }
-  
 
   return (
     <main className="min-h-screen pb-24 bg-[#f0f2f5] font-sans">
-      {/* Main Navigation Bar (Top for Desktop, Hamburger for Mobile) */}
       <nav className="sticky top-0 z-50 flex items-center justify-between p-4 bg-white shadow-md">
-        {/* Logo - Updated to "Ugbuy" */}
         <Link href="/" className="flex items-center flex-shrink-0 space-x-2">
           <Image
             src="/assets/images/one.jpg"
@@ -170,7 +157,6 @@ export default function HomePage() {
           <span className="text-xl font-bold text-[#181a1f]">Ugbuy</span>
         </Link>
 
-        {/* Desktop Menu & Cart */}
         <div className="items-center hidden space-x-6 md:flex">
           <Link
             href="/about"
@@ -178,7 +164,6 @@ export default function HomePage() {
           >
             About
           </Link>
-          {/* Updated "Become a Seller" to a button-like link */}
           <Link
             href="/auth?mode=register"
             className="px-4 py-2 text-sm font-semibold text-white transition-colors duration-200 bg-[#2edc86] rounded-full shadow-md hover:bg-[#25b36b]"
@@ -207,7 +192,6 @@ export default function HomePage() {
           </Link>
         </div>
 
-        {/* Mobile Hamburger & Cart Icon */}
         <div className="flex items-center space-x-4 md:hidden">
           <Link href="/cart" className="relative">
             <div className="flex items-center justify-center w-10 h-10 bg-gray-100 shadow-sm rounded-xl">
@@ -230,7 +214,6 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Mobile Menu Drawer */}
         {menuOpen && (
           <div className="absolute left-0 right-0 flex flex-col items-start p-4 space-y-4 bg-white border-t border-gray-100 shadow-lg top-16 md:hidden">
             <Link
@@ -239,7 +222,6 @@ export default function HomePage() {
             >
               About
             </Link>
-            {/* Updated "Become a Seller" to a button-like link in mobile menu */}
             <Link
               href="/auth?mode=register"
               className="w-full px-3 py-2 text-lg font-semibold text-white transition-colors duration-200 bg-[#2edc86] rounded-md shadow-md hover:bg-[#25b36b] text-center"
@@ -257,7 +239,6 @@ export default function HomePage() {
       </nav>
 
       <div className="px-4 pt-6">
-        {/* Search */}
         <div className="relative mb-6">
           <input
             ref={searchInputRef}
@@ -285,7 +266,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Promo Banner Carousel */}
         <div className="relative w-full h-40 mb-8 overflow-hidden shadow-lg rounded-2xl md:h-48 lg:h-56">
           <div
             className="flex h-full transition-transform duration-500 ease-in-out"
@@ -311,15 +291,14 @@ export default function HomePage() {
                   <Image
                     src={banner.img}
                     alt="Order steps"
-                    layout="fill"
-                    objectFit="cover"
+                    fill // Replaced layout="fill"
+                    style={{ objectFit: 'cover' }} // Replaced objectFit="cover"
                     className="rounded-xl"
                   />
                 </div>
               </div>
             ))}
           </div>
-          {/* Navigation Arrows */}
           <button
             onClick={goToPreviousBanner}
             className="absolute p-2 text-gray-700 transition-colors -translate-y-1/2 bg-white rounded-full shadow-md left-2 top-1/2 bg-opacity-70 hover:bg-opacity-90"
@@ -334,7 +313,6 @@ export default function HomePage() {
           >
             <ChevronRight size={24} />
           </button>
-          {/* Optional: Add dot indicators for carousel */}
           <div className="absolute flex space-x-2 -translate-x-1/2 bottom-4 left-1/2">
             {banners.map((_, index) => (
               <span
@@ -349,7 +327,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Category Chips - Refined styling */}
         <div className="mb-8">
           <h2 className="mb-3 text-lg font-semibold text-[#181a1f]">
             Categories
@@ -372,7 +349,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Recommended Products Grid */}
         <div>
           <h2 className="mb-3 text-lg font-semibold text-[#181a1f]">
             Recommended for You
@@ -388,8 +364,8 @@ export default function HomePage() {
                     <Image
                       src={item.imageUrl || "https://placehold.co/400x400/E8F5E9/1E8449?text=No+Image"}
                       alt={item.name}
-                      layout="fill"
-                      objectFit="cover"
+                      fill // Replaced layout="fill"
+                      style={{ objectFit: 'cover' }} // Replaced objectFit="cover"
                       className="rounded-2xl"
                     />
                   </div>
@@ -447,7 +423,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar - Visible on small screens */}
       <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white border-t-2 border-gray-100 shadow-lg sm:hidden">
         <div className="flex justify-around py-3">
           <Link

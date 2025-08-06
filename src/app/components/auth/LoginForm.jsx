@@ -1,14 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react'; // Import useEffect
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import Link from 'next/link';
 import { FaGoogle } from 'react-icons/fa';
 import { Eye, EyeOff } from 'lucide-react';
 
-// Import the shared Firebase instances
-import { auth } from '@/app/firebase/config'; // Import auth
+import { auth } from '@/app/firebase/config';
 import ToastNotification from "@/app/components/ToastNotification";
 
 export default function LoginForm() {
@@ -21,14 +20,13 @@ export default function LoginForm() {
 
     const router = useRouter();
 
-    // Add a useEffect to log the 'auth' object on client-side mount
-    // This is CRITICAL for debugging if 'auth' is null in the browser
-    useEffect(() => {
-        console.log('LoginForm mounted. Auth object:', auth);
-        if (!auth) {
-            setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
-        }
-    }, []); // Run once on mount
+    // Removed useEffect console.log for cleaner output and to rule out subtle React issues
+    // useEffect(() => {
+    //     console.log('LoginForm mounted. Auth object:', auth);
+    //     if (!auth) {
+    //         setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
+    //     }
+    // }, []);
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
@@ -37,16 +35,15 @@ export default function LoginForm() {
     const handleLogin = async (e) => {
         e.preventDefault();
         setError('');
-        setToast({ ...toast, isVisible: false }); // Hide previous toast
+        setToast({ ...toast, isVisible: false });
         setLoading(true);
 
-        // Explicitly check if auth is available before proceeding
         if (!auth) {
             setError('Firebase authentication service is not available.');
             setToast({ message: 'Authentication service is not available. Please try again later.', type: 'error', isVisible: true });
             setLoading(false);
             console.error('Login Error: Firebase auth object is null.');
-            return; // Stop execution if auth is null
+            return;
         }
 
         try {

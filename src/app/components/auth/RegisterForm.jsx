@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'; // Import useEffect
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { FaGoogle } from 'react-icons/fa';
 import { Eye, EyeOff } from 'lucide-react';
 
-// Import the shared Firebase instances
 import { auth, db } from '@/app/firebase/config';
 import ToastNotification from "@/app/components/ToastNotification";
 
@@ -25,16 +24,14 @@ export default function RegisterForm() {
 
     const router = useRouter();
 
-    // Add a useEffect to log the 'auth' object on client-side mount
-    // This is CRITICAL for debugging if 'auth' is null in the browser
-    useEffect(() => {
-        console.log('RegisterForm mounted. Auth object:', auth);
-        if (!auth) {
-            setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
-        }
-    }, []); // Run once on mount
+    // Removed useEffect console.log for cleaner output and to rule out subtle React issues
+    // useEffect(() => {
+    //     console.log('RegisterForm mounted. Auth object:', auth);
+    //     if (!auth) {
+    //         setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
+    //     }
+    // }, []);
 
-    // Password validation logic
     const validatePassword = (pwd) => {
         const errors = [];
         if (pwd.length < 8) {
@@ -49,7 +46,7 @@ export default function RegisterForm() {
         if (!/[0-9]/.test(pwd)) {
             errors.push('Password must contain at least one number.');
         }
-        if (!/[!@#$%^&*_(),.?":{}|<>]/.test(pwd)) {
+        if (!/[!@#$%^&*(),.?":{}|<>_]/.test(pwd)) {
             errors.push('Password must contain at least one special character.');
         }
         return errors;
@@ -58,7 +55,7 @@ export default function RegisterForm() {
     const handlePasswordChange = (e) => {
         const newPassword = e.target.value;
         setPassword(newPassword);
-        setPasswordErrors(validatePassword(newPassword)); // Validate on change
+        setPasswordErrors(validatePassword(newPassword));
     };
 
     const togglePasswordVisibility = () => {
@@ -68,19 +65,17 @@ export default function RegisterForm() {
     const handleRegister = async (e) => {
         e.preventDefault();
         setError('');
-        setToast({ ...toast, isVisible: false }); // Hide previous toast
+        setToast({ ...toast, isVisible: false });
         setLoading(true);
 
-        // Explicitly check if auth is available before proceeding
         if (!auth) {
             setError('Firebase authentication service is not available.');
             setToast({ message: 'Authentication service is not available. Please try again later.', type: 'error', isVisible: true });
             setLoading(false);
             console.error('Registration Error: Firebase auth object is null.');
-            return; // Stop execution if auth is null
+            return;
         }
 
-        // Validate all fields
         if (!email || !password || !storeName || !contactNumber) {
             setError('All fields are required.');
             setToast({ message: 'All fields are required.', type: 'error', isVisible: true });
@@ -88,35 +83,31 @@ export default function RegisterForm() {
             return;
         }
 
-        // Run password validation before submitting
         const currentPasswordErrors = validatePassword(password);
         if (currentPasswordErrors.length > 0) {
-            setPasswordErrors(currentPasswordErrors); // Update state with all errors
-            setError('Please fix the password errors.'); // General error message
+            setPasswordErrors(currentPasswordErrors);
+            setError('Please fix the password errors.');
             setToast({ message: 'Please fix the password errors.', type: 'error', isVisible: true });
             setLoading(false);
             return;
         }
 
         try {
-            // Step 1: Create the user account in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Step 2: Create a seller profile document in Firestore, implicitly setting isSeller to true
             await setDoc(doc(db, 'sellers', user.uid), {
                 storeName: storeName,
                 contactNumber: contactNumber,
                 email: user.email,
                 createdAt: new Date(),
-                isSeller: true, // All registered accounts are now sellers
+                isSeller: true,
             });
 
             setToast({ message: 'Registration successful! Redirecting...', type: 'success', isVisible: true });
-            // Step 3: Redirect to the role-based redirector
             setTimeout(() => {
                 router.push('/auth?mode=redirect');
-            }, 1500); // Give time for toast to be seen
+            }, 1500);
 
         } catch (err) {
             setError('Failed to register. Please try again.');
@@ -127,7 +118,6 @@ export default function RegisterForm() {
         }
     };
 
-    // Placeholder for Google Sign-in (requires Firebase Google Auth setup)
     const handleGoogleSignIn = () => {
         setToast({ message: 'Google Sign-in not yet implemented.', type: 'info', isVisible: true });
         console.log('Google Sign-in clicked');

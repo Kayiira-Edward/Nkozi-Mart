@@ -14,35 +14,30 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Keep this line ONLY if you have a measurementId
 };
 
-// Check if firebaseConfig is valid before initializing
+// Validate config before initializing
 const isConfigValid = firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId && firebaseConfig.appId;
 
 let app;
-if (isConfigValid) {
-  try {
-    app = initializeApp(firebaseConfig);
-    // console.log("Firebase app initialized successfully."); // Removed for cleaner output
-  } catch (error) {
-    console.error("Error initializing Firebase app:", error.message);
-    // This error should ideally not happen if isConfigValid is true and .env is correct
-  }
-} else {
-  console.error("Firebase configuration is incomplete or invalid. Check your .env.local file and ensure all NEXT_PUBLIC_FIREBASE_ variables are set correctly.");
-}
-
-// Initialize Firebase services only if the app was successfully initialized
 let auth = null;
 let db = null;
 let storage = null;
 
-if (app) {
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
+if (isConfigValid) {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    storage = getStorage(app);
+    console.log("Firebase app and services initialized successfully.");
+  } catch (error) {
+    console.error("Error initializing Firebase app or services:", error.message);
+    // Log the config that caused the error for debugging
+    console.error("Firebase config used:", firebaseConfig);
+  }
 } else {
-  // This means the app failed to initialize, so auth, db, storage will be null
-  console.error("Firebase app not initialized, cannot get auth, db, or storage instances.");
+  console.error("Firebase configuration is incomplete or invalid. Check your .env.local file and ensure all NEXT_PUBLIC_FIREBASE_ variables are set correctly.");
+  // Log the incomplete config for debugging
+  console.error("Incomplete Firebase config:", firebaseConfig);
 }
 
-// Export the initialized services
 export { auth, db, storage };
