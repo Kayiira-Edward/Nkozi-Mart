@@ -16,7 +16,7 @@ export default function AuthRedirector() {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             if (currentUser) {
                 // If user is authenticated, they are a seller, redirect to dashboard
-                router.push('/seller/dashboard');
+                router.push('/seller');
             } else {
                 // If not authenticated, redirect to login page
                 router.push('/auth?mode=login');

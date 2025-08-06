@@ -11,7 +11,7 @@ export default function SellerLayout({ children }) {
   return (
     <div className="flex min-h-screen"> {/* Added flex to make main content sit next to sidebar */}
       {/* The Sidebar component handles its own fixed positioning and responsive logic */}
-      <Sidebar />
+<Sidebar />
 
       {/* Main content */}
       {/* On desktop, add left padding to prevent content from being hidden behind the fixed sidebar. */}
