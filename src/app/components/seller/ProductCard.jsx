@@ -158,14 +158,6 @@ export default function ProductCard({ product, whatsapp, onEdit }) {
             {isDeleting ? <span className="animate-spin">🗑️</span> : <Trash2 size={16} />}
           </button>
         </div>
-        <Link
-          href={whatsappUrl}
-          target="_blank"
-          className="flex items-center justify-center w-10 h-10 text-white transition-colors duration-200 bg-[#2edc86] rounded-full shadow-md hover:bg-[#4ade80]"
-          aria-label={`Order ${product.name} on WhatsApp`}
-        >
-          <FaWhatsapp size={20} />
-        </Link>
       </div>
 
       {/* Delete Confirmation Modal */}
