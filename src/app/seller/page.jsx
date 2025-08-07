@@ -4,226 +4,147 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, collection, query, where, onSnapshot } from 'firebase/firestore';
-import { FaBox, FaDollarSign, FaShoppingCart, FaWhatsapp } from 'react-icons/fa';
-import Link from 'next/link';
 
-// Import the shared Firebase instances
-import { auth, db } from '@/app/firebase/config';
+// Corrected import paths
+import { auth, db } from '../firebase/config';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ToastNotification from '../components/ToastNotification';
+import Sidebar from '../components/seller/Sidebar';
+import DashboardStats from '../components/seller/DashboardStats';
+import ProductForm from '../components/seller/ProductForm'; // Assuming this is also a dashboard component
 
-// Updated with the correct component paths
-import ProductList from '@/app/components/seller/ProductList';
-import ProfileDisplay from '@/app/components/seller/ProfileDisplay';
-import ProfileForm from '@/app/components/seller/ProfileForm';
-
+/**
+ * The main component for the seller's dashboard.
+ * It handles authentication, fetches real-time data from Firestore,
+ * and manages the UI state based on the fetched data.
+ */
 export default function SellerDashboardHome() {
   const [user, setUser] = useState(null);
-  const [sellerProfile, setSellerProfile] = useState(null); // State for seller profile
-  const [totalProducts, setTotalProducts] = useState(0);
-  const [totalRevenue, setTotalRevenue] = useState(0);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [products, setProducts] = useState([]); // Store all products
-  const [searchQuery, setSearchQuery] = useState(''); // State for search query
   const [loading, setLoading] = useState(true);
+  const [sellerProfile, setSellerProfile] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false });
   const router = useRouter();
 
-  // Handle Authentication and Data Fetching
+  // 1. Listen for authentication state changes to get the user object.
+  // This listener runs once when the component mounts.
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
       if (authUser) {
         setUser(authUser);
       } else {
-        // Redirect to the centralized login page
         router.push('/auth?mode=login');
       }
+      // The loading state is now managed by the data-fetching useEffect below
     });
 
     return () => unsubscribeAuth();
   }, [router]);
 
+  // 2. Fetch and listen for real-time data only when the user object is available.
+  // This is the key fix for the runtime error.
   useEffect(() => {
-    if (!user) return;
-    
-    setLoading(true);
-    
-    // Fetch seller profile
-    const unsubscribeProfile = onSnapshot(doc(db, 'sellers', user.uid), (docSnap) => {
+    // Exit if there is no authenticated user yet.
+    if (!user) {
+      setLoading(true); // Ensure loading state is true while waiting for user
+      return;
+    }
+
+    setLoading(true); // Start loading data for the authenticated user
+
+    // Firestore listener for the seller's profile
+    const profileRef = doc(db, 'sellers', user.uid);
+    const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
       if (docSnap.exists()) {
         setSellerProfile(docSnap.data());
+      } else {
+        setSellerProfile(null);
+        console.log("Seller profile not found. The user might be new.");
       }
+      // No longer setting loading to false here, to wait for all data
     }, (error) => {
       console.error('Error fetching seller profile:', error);
+      setToast({ message: 'Error loading profile.', type: 'error', isVisible: true });
     });
 
-    // Real-time listener for products
+    // Firestore listener for the seller's products
     const productsQuery = query(collection(db, 'products'), where('sellerId', '==', user.uid));
     const unsubscribeProducts = onSnapshot(productsQuery, (querySnapshot) => {
-      const productsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setProducts(productsData);
-      setTotalProducts(productsData.length);
-      
-      // Check if both profile and products are loaded before setting loading to false
-      if (sellerProfile) {
-        setLoading(false);
-      }
+      const productsArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setProducts(productsArray);
+    }, (error) => {
+      console.error('Error fetching products:', error);
+      setToast({ message: 'Error loading products.', type: 'error', isVisible: true });
     });
 
-    // Real-time listener for orders
+    // Firestore listener for the seller's orders
     const ordersQuery = query(collection(db, 'orders'), where('sellerId', '==', user.uid));
     const unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
-      const ordersData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setTotalOrders(ordersData.length);
-      
-      // Calculate total revenue from the fetched orders
-      const revenue = ordersData.reduce((sum, order) => {
-        const orderTotal = order.items ? order.items.reduce((itemSum, item) => itemSum + (item.price * (item.quantity || 1)), 0) : 0;
-        return sum + orderTotal;
-      }, 0);
-      setTotalRevenue(revenue);
+      const ordersArray = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setOrders(ordersArray);
     }, (error) => {
-      console.error('Error fetching dashboard data:', error);
+      console.error('Error fetching orders:', error);
+      setToast({ message: 'Error loading orders.', type: 'error', isVisible: true });
     });
-    
-    // Once everything is fetched, set loading to false
-    if (sellerProfile && products) {
-      setLoading(false);
-    }
-    
+
+    // Final cleanup function for all listeners.
     return () => {
       unsubscribeProfile();
       unsubscribeProducts();
       unsubscribeOrders();
     };
+  }, [user]); // This effect re-runs only when 'user' changes.
+
+  // 3. Unified loading state check after all data has been fetched.
+  useEffect(() => {
+    // Check if both user and sellerProfile are loaded before setting loading to false.
+    if (user && sellerProfile) {
+      setLoading(false);
+    }
   }, [user, sellerProfile]);
 
-  // Filter products based on search query
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
-  // Format the revenue as a currency string
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-UG', {
-      style: 'currency',
-      currency: 'UGX',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-  
-  const cardData = [
-    {
-      title: 'Total Products',
-      count: totalProducts,
-      icon: <FaBox size={24} />,
-      iconColor: 'bg-green-100 text-[#25d366]',
-    },
-    {
-      title: 'Total Revenue',
-      count: formatCurrency(totalRevenue),
-      icon: <FaDollarSign size={24} />,
-      iconColor: 'bg-yellow-100 text-yellow-600',
-    },
-    {
-      title: 'Total Orders',
-      count: totalOrders,
-      icon: <FaShoppingCart size={24} />,
-      iconColor: 'bg-blue-100 text-blue-600',
-    },
-  ];
-
-  if (loading || !user) {
+  // If user is authenticated but no profile exists, show a different message.
+  if (!sellerProfile) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-lg text-gray-600 bg-[#f0f2f5]">
-        Loading dashboard...
+      <div className="flex flex-col items-center justify-center min-h-screen text-lg text-gray-600 bg-[#f0f2f5] p-6 text-center">
+        <p className="mb-4">Welcome to your dashboard! Please create your seller profile to get started.</p>
+        <div className="w-full max-w-2xl">
+          <ProductForm />
+        </div>
       </div>
     );
   }
 
-  const welcomeName = sellerProfile?.shopName || user.displayName || 'Seller';
-  const welcomeMessage = `Welcome, ${welcomeName} like a pro! 👋`;
-
   return (
-    <main className="min-h-screen p-6 font-sans bg-[#f0f2f5] md:p-10 md:mt-0 pt-24 md:pt-10">
-      <div className="mx-auto space-y-10 max-w-7xl">
-        {/* Header */}
-        <div className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
-          <h1 className="text-3xl font-bold text-gray-800 md:text-4xl">
-            {welcomeMessage}
-          </h1>
-          
-
-          {/* Search */}
-          <div className="relative w-full max-w-md">
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-full border border-gray-300 bg-white py-3 pl-12 pr-4 text-sm shadow-inner focus:outline-none focus:ring-2 focus:ring-[#25d366] transition-all" 
-            />
-            <svg
-              className="absolute w-5 h-5 text-gray-400 -translate-y-1/2 left-4 top-1/2"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-          </div>
-        </div>
-        {/* Description */}
-        <p className="max-w-2xl leading-relaxed text-gray-600">
-          This is your control center. Use the side menu to manage products, track orders, and update your profile.
-        </p>
-
-        {/* Cards */}
-        <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
-          {cardData.map(({ title, count, icon, iconColor }, idx) => (
-            <div
-              key={idx}
-              className="p-6 bg-white border border-gray-200 rounded-2xl shadow-md transition-transform transform hover:scale-[1.03] hover:shadow-xl duration-300"
-            >
-              <div className="flex items-center gap-3">
-                <span className={`p-3 rounded-2xl ${iconColor}`}>
-                  {icon}
-                </span>
-                <h2 className="text-sm font-semibold tracking-wider text-gray-500 uppercase">{title}</h2>
-              </div>
-              <p className="mt-6 text-4xl font-extrabold text-gray-900">{count}</p>
-            </div>
-          ))}
-        </section>
-        
-        {/* Profile Display Section */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">Your Public Profile</h2>
-          <div className="p-6 bg-white border border-gray-200 shadow-md rounded-2xl">
-            <ProfileDisplay sellerId={user.uid} />
-          </div>
-        </section>
-
-        {/* Products List Section */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">Your Products</h2>
-          <div className="p-6 bg-white border border-gray-200 shadow-md rounded-2xl">
-            <ProductList sellerId={user.uid} products={filteredProducts} />
-          </div>
-        </section>
-
-        {/* Recent Orders Section (Placeholder) */}
-        <section className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-800">Recent Orders</h2>
-          <div className="p-6 text-gray-500 bg-white border border-gray-200 shadow-md rounded-2xl">
-            <p>This section would display a list of your most recent orders. You can build a new component for this.</p>
-          </div>
-        </section>
+    <div className="flex min-h-screen bg-gray-100">
+      <div className="flex-shrink-0 hidden w-64 lg:block">
+        <Sidebar sellerProfile={sellerProfile} />
       </div>
-    </main>
+      <div className="flex flex-col flex-grow">
+        <header className="flex items-center justify-between p-4 bg-white shadow lg:hidden">
+          <h1 className="text-xl font-bold text-gray-800">Seller Dashboard</h1>
+        </header>
+        <main className="flex-grow p-6 overflow-auto">
+          <div className="p-6">
+            <h1 className="mb-6 text-3xl font-bold">Seller Dashboard</h1>
+            <DashboardStats products={products} orders={orders} />
+            <div className="mt-8">
+              {/* You can add another component here, e.g., a list of products */}
+            </div>
+          </div>
+        </main>
+      </div>
+      <ToastNotification
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onDismiss={() => setToast({ ...toast, isVisible: false })}
+      />
+    </div>
   );
 }

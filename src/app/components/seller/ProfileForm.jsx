@@ -1,43 +1,134 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged } from 'firebase/auth';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// Assuming these imports are correctly configured in your project
+import { auth, storage } from '../../firebase/config';
+import LoadingSpinner from '../LoadingSpinner'; // Make sure this component exists
+import ToastNotification from '../ToastNotification'; // Make sure this component exists
+
+/**
+ * A form component to handle creating or editing a seller's profile.
+ * @param {object} initialData - The initial profile data to populate the form.
+ * @param {function} onSave - A callback function to be executed on form submission.
+ */
 export default function ProfileForm({ initialData, onSave }) {
-  // Initialize state with data matching the seller profile structure
-  const [shopName, setShopName] = useState(initialData?.shopName || '');
+  const [storeName, setStoreName] = useState(initialData?.storeName || '');
   const [description, setDescription] = useState(initialData?.description || '');
   const [whatsapp, setWhatsapp] = useState(initialData?.whatsapp || '');
-  // No loading or toast state here; these are handled by the parent component (SellerProfilePage)
+  const [location, setLocation] = useState(initialData?.location || '');
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [previewURL, setPreviewURL] = useState(initialData?.profileImage || '');
+  const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ message: '', type: '', isVisible: false });
 
-  // Update form data if initialData changes (e.g., when switching from display to edit mode)
+  const router = useRouter();
+
+  // Set up auth state listener to get the userId
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserId(user.uid);
+      } else {
+        router.push('/auth/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
+
+  // Update form data and preview URL when initialData changes
   useEffect(() => {
     if (initialData) {
-      setShopName(initialData.shopName || '');
+      setStoreName(initialData.storeName || '');
       setDescription(initialData.description || '');
       setWhatsapp(initialData.whatsapp || '');
+      setLocation(initialData.location || '');
+      setPreviewURL(initialData.profileImage || '');
+      setProfileImageFile(null); // Reset file input
     }
   }, [initialData]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Call the onSave prop with the current form data
-    if (onSave) {
-      onSave({ shopName, description, whatsapp });
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfileImageFile(file);
+      setPreviewURL(URL.createObjectURL(file));
     }
+  };
+
+  /**
+   * Uploads the image file to Firebase Storage.
+   * @param {File} file - The image file to upload.
+   * @returns {Promise<string|null>} The download URL of the uploaded image, or null on failure.
+   */
+  const uploadImage = async (file) => {
+    if (!file || !userId) {
+      return null;
+    }
+
+    setToast({ message: 'Uploading image...', type: 'info', isVisible: true });
+    try {
+      // Use a unique filename to prevent conflicts
+      const filename = `profile_pictures/${userId}/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, filename);
+      
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
+      setToast({ message: 'Image uploaded successfully!', type: 'success', isVisible: true });
+      return url;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setToast({ message: `Image upload failed: ${error.message}`, type: 'error', isVisible: true });
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    let imageUrl = initialData?.profileImage || '';
+    if (profileImageFile) {
+      imageUrl = await uploadImage(profileImageFile);
+      // If image upload failed, stop the form submission
+      if (!imageUrl) {
+        setLoading(false);
+        return;
+      }
+    }
+    
+    // Call the onSave prop with the current form data and userId
+    if (onSave) {
+      await onSave({
+        storeName,
+        description,
+        whatsapp,
+        location,
+        profileImage: imageUrl,
+        userId
+      });
+    }
+
+    setLoading(false);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="shopName" className="block mb-1 text-sm font-medium text-gray-700">
-          Shop Name
+        <label htmlFor="storeName" className="block mb-1 text-sm font-medium text-gray-700">
+          Store Name
         </label>
         <input
           type="text"
-          id="shopName"
-          name="shopName"
-          value={shopName}
-          onChange={(e) => setShopName(e.target.value)}
+          id="storeName"
+          name="storeName"
+          value={storeName}
+          onChange={(e) => setStoreName(e.target.value)}
           className="w-full px-4 py-3 mt-1 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
           required
         />
@@ -70,14 +161,58 @@ export default function ProfileForm({ initialData, onSave }) {
           required
         />
       </div>
+      <div>
+        <label htmlFor="location" className="block mb-1 text-sm font-medium text-gray-700">
+          Location
+        </label>
+        <input
+          type="text"
+          id="location"
+          name="location"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          className="w-full px-4 py-3 mt-1 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
+          required
+        />
+      </div>
+      <div>
+        <label htmlFor="profileImage" className="block mb-1 text-sm font-medium text-gray-700">
+          Profile Picture
+        </label>
+        <input
+          type="file"
+          id="profileImage"
+          name="profileImage"
+          accept="image/*"
+          onChange={handleImageChange}
+          className="w-full mt-1 text-gray-700 file:mr-4 file:py-2 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#2edc86] file:text-white hover:file:bg-[#25b36b] transition-colors cursor-pointer"
+        />
+        {previewURL && (
+          <div className="relative w-24 h-24 mt-4 overflow-hidden rounded-full shadow-inner">
+            <Image
+              src={previewURL}
+              alt="Profile Preview"
+              fill
+              style={{ objectFit: 'cover' }}
+            />
+          </div>
+        )}
+      </div>
       <div className="flex justify-end">
         <button
           type="submit"
-          className="px-6 py-3 font-semibold text-white transition-colors bg-[#2edc86] rounded-full shadow-md hover:bg-[#25b36b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2edc86]"
+          className="px-6 py-3 font-semibold text-white transition-colors bg-[#2edc86] rounded-full shadow-md hover:bg-[#25b36b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2edc86] disabled:opacity-50"
+          disabled={loading}
         >
-          Save Changes
+          {loading ? <LoadingSpinner /> : 'Save Changes'}
         </button>
       </div>
+      <ToastNotification
+        message={toast.message}
+        type={toast.type}
+        isVisible={toast.isVisible}
+        onDismiss={() => setToast({ ...toast, isVisible: false })}
+      />
     </form>
   );
 }

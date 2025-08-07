@@ -1,19 +1,21 @@
 'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, collection, query, where, onSnapshot, deleteDoc } from "firebase/firestore";
-import { Plus, Edit, Trash } from "lucide-react"; // Import Edit and Trash icons
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, collection, query, where, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { Plus } from 'lucide-react';
 
-// Import shared Firebase instances and components
-import { auth, db } from '@/app/firebase/config';
-import ProductForm from '@/app/components/seller/ProductForm';
-import Modal from '@/app/components/Modal';
-import ToastNotification from "@/app/components/ToastNotification";
+// Import shared Firebase instances and components using relative paths
+import { auth, db } from '../../firebase/config';
+import ProductForm from '../../components/seller/ProductForm';
+import ProductList from '../../components/seller/ProductList';
+import Modal from '../../components/Modal';
+import ToastNotification from '../../components/ToastNotification';
 
 export default function ManageProductsPage() {
   const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,19 +29,37 @@ export default function ManageProductsPage() {
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
       if (authUser) {
         setUser(authUser);
-        setLoading(false);
       } else {
+        // If no user, redirect to login and stop loading
         router.push('/auth?mode=login');
       }
+      setLoading(false);
     });
 
+    // Cleanup function to unsubscribe from the listener when the component unmounts
     return () => unsubscribeAuth();
   }, [router]);
 
-  // Fetch products in real-time
+  // Fetch seller profile and products only when the user object is available
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      // If no user, we can't fetch data, so return and wait for auth state to change
+      return;
+    }
 
+    // 1. Fetch seller profile in real-time
+    const profileRef = doc(db, 'sellers', user.uid);
+    const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setProfile(docSnap.data());
+      } else {
+        console.log('No seller profile found!');
+      }
+    }, (error) => {
+      console.error('Error fetching seller profile: ', error);
+    });
+
+    // 2. Fetch products in real-time
     const productsQuery = query(collection(db, 'products'), where('sellerId', '==', user.uid));
     const unsubscribeProducts = onSnapshot(productsQuery, (querySnapshot) => {
       const productsArray = [];
@@ -52,10 +72,12 @@ export default function ManageProductsPage() {
       setToast({ message: 'Error loading products.', type: 'error', isVisible: true });
     });
 
+    // Cleanup function to unsubscribe from both listeners
     return () => {
+      unsubscribeProfile();
       unsubscribeProducts();
     };
-  }, [user]);
+  }, [user]); // This useEffect runs only when the 'user' object changes
 
   const handleFormSubmitted = () => {
     setIsModalOpen(false);
@@ -74,6 +96,9 @@ export default function ManageProductsPage() {
       return;
     }
 
+    // Use a custom modal instead of window.confirm
+    // This is crucial because window.confirm does not work correctly in many modern contexts
+    // For this example, we will add a simple modal UI later if you request it.
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
         await deleteDoc(doc(db, 'products', productId));
@@ -109,85 +134,21 @@ export default function ManageProductsPage() {
         </button>
       </header>
 
-      {products.length === 0 ? (
-        <div className="flex items-center justify-center h-64 text-center">
-          <p className="text-lg font-medium text-gray-600">No products yet. Click the button to add your first product!</p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto bg-white shadow-md rounded-xl">
-          <table className="min-w-full table-auto">
-            <thead className="border-b border-gray-200 bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                  Product
-                </th>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                  Price
-                </th>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                  Stock
-                </th>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product) => (
-                <tr key={product.id}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0 w-10 h-10">
-                        <img 
-                          className="object-cover w-10 h-10 rounded-full" 
-                          src={product.imageUrl || `https://placehold.co/40x40/f0f2f5/a0a0a0?text=${product.name.charAt(0)}`}
-                          alt={product.name} 
-                        />
-                      </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                        <div className="text-sm text-gray-500">{product.category}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    UGX {product.price ? product.price.toLocaleString() : '0'}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {product.stock}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-                    <button
-                      onClick={() => handleEditProduct(product)}
-                      className="text-[#2edc86] hover:text-[#25b36b] transition-colors mr-2"
-                    >
-                      <Edit size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProduct(product.id)}
-                      className="text-red-600 transition-colors hover:text-red-800"
-                    >
-                      <Trash size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ProductList
+        products={products}
+        whatsapp={profile?.whatsapp}
+        onEdit={handleEditProduct}
+        onDelete={handleDeleteProduct}
+      />
 
-      {/* Add Product Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
         <ProductForm onSubmit={handleFormSubmitted} />
       </Modal>
 
-      {/* Edit Product Modal */}
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
         <ProductForm onSubmit={handleFormSubmitted} initialData={editingProduct} />
       </Modal>
 
-      {/* Toast Notification */}
       <ToastNotification
         message={toast.message}
         type={toast.type}

@@ -3,7 +3,12 @@
 import Image from 'next/image';
 import { FaWhatsapp } from 'react-icons/fa'; // Import WhatsApp icon
 
-export default function ProfileDisplay({ profile }) {
+/**
+ * Displays the seller's profile details.
+ * @param {object} profile - The seller's profile object.
+ * @param {number} productCount - The total number of products the seller has.
+ */
+export default function ProfileDisplay({ profile, productCount = 0 }) {
     if (!profile) {
         return (
             <div className="p-8 text-center text-gray-500 bg-white border-2 border-gray-300 border-dashed shadow-md rounded-xl">
@@ -41,6 +46,12 @@ export default function ProfileDisplay({ profile }) {
                     <span className="font-medium text-gray-800">Description:</span> {profile.description || 'No description provided.'}
                 </p>
                 <p>
+                    <span className="font-medium text-gray-800">Location:</span> {profile.location || 'Not provided.'}
+                </p>
+                <p>
+                    <span className="font-medium text-gray-800">Products Listed:</span> {productCount}
+                </p>
+                <p>
                     <span className="font-medium text-gray-800">WhatsApp:</span> {profile.whatsapp || 'Not provided'}
                     {whatsappUrl && (
                         <a 
@@ -54,7 +65,7 @@ export default function ProfileDisplay({ profile }) {
                         </a>
                     )}
                 </p>
-                {/* Add other profile details here as needed, e.g., address, social links */}
+                {/* Add other profile details here as needed, e.g., social links */}
             </div>
         </div>
     );
