@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 import { auth } from '../../firebase/config';
 import LoadingSpinner from '../LoadingSpinner';
@@ -73,9 +74,11 @@ export default function ProfileForm({ initialData, onSave }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', CLOUDINARY_CLOUD_NAME);
+      // CORRECTED: Use CLOUDINARY_UPLOAD_PRESET here
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${dzflajft3}/image/upload`, {
+      // CORRECTED: Use CLOUDINARY_CLOUD_NAME variable in the URL
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
         method: 'POST',
         body: formData,
       });

@@ -9,6 +9,10 @@ import { FaWhatsapp } from 'react-icons/fa'; // Import WhatsApp icon
  * @param {number} productCount - The total number of products the seller has.
  */
 export default function ProfileDisplay({ profile, productCount = 0 }) {
+    // This console.log will show you the value of productCount being passed in.
+    // It will likely be 0 until a parent component fetches the real count from Firestore.
+    console.log("ProfileDisplay received productCount:", productCount);
+
     if (!profile) {
         return (
             <div className="p-8 text-center text-gray-500 bg-white border-2 border-gray-300 border-dashed shadow-md rounded-xl">

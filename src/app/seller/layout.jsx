@@ -1,4 +1,3 @@
-// app/seller/layout.jsx
 import React from 'react';
 import Sidebar from '../components/seller/Sidebar';
 
@@ -10,13 +9,11 @@ export const metadata = {
 export default function SellerLayout({ children }) {
   return (
     <div className="flex min-h-screen bg-[#f0f2f5]">
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex">
-        <Sidebar />
-      </div>
+      {/* Sidebar is hidden on mobile and shown on desktop */}
+      <Sidebar />
 
       {/* Main content area */}
-      <main className="flex-1 p-6 md:ml-64">
+      <main className="flex-1 px-4 pt-16 pb-16 md:ml-64 md:pt-0 md:pb-0 md:px-6">
         {children}
       </main>
     </div>

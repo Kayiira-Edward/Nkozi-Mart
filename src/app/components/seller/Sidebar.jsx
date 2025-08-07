@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/lib/utils'; // Assuming cn is a utility function for Tailwind class merging
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 // Import the shared Firebase instance
@@ -12,11 +12,9 @@ import { auth } from '@/app/firebase/config';
 import {
   LucideLayoutDashboard,
   LucidePackagePlus,
-  LucideListOrdered,
   LucideUser,
   LucideLogOut,
-  LucideShare2,
-  LucideMenu,
+  LucideArrowLeft, // Import the back arrow icon
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -105,17 +103,18 @@ export default function Sidebar() {
       {/* Mobile Top Nav */}
       <div className="fixed top-0 z-50 w-full bg-white border-b border-gray-200 shadow-md md:hidden">
         <nav className="flex items-center justify-between h-16 px-4">
+          {/* Back button for mobile */}
+          <button
+            onClick={() => router.back()}
+            className="p-2 text-gray-500 transition-colors rounded-full hover:bg-gray-100"
+            title="Go Back"
+          >
+            <LucideArrowLeft className="w-6 h-6" />
+          </button>
           <Link href="/" className="flex items-center justify-center h-full">
             <img src="/logo.png" alt="Ugbuy Logo" className="w-auto h-10" />
           </Link>
           <div className="flex items-center gap-2">
-            <Link
-              href={shareProfileUrl}
-              className="p-2 text-gray-500 rounded-full hover:bg-gray-100 hover:text-[#25d366] transition-colors"
-              title="Share Profile"
-            >
-              <LucideShare2 className="w-6 h-6" />
-            </Link>
             <button
               onClick={handleLogout}
               className="p-2 text-gray-500 transition-colors rounded-full hover:bg-red-100 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-600"
