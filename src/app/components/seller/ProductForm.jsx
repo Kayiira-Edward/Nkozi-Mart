@@ -161,7 +161,7 @@ export default function ProductForm({ onSubmit, initialData }) {
 
         const productsCollection = collection(db, 'products');
         await addDoc(productsCollection, {
-          sellerId: userId,
+          sellerId: userId, // <<< THIS IS THE KEY FIELD
           name,
           price: parseFloat(price),
           description,
