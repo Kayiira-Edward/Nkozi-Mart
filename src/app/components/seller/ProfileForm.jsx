@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
-// Assuming these imports are correctly configured in your project
-import { auth, storage } from '../../firebase/config';
-import LoadingSpinner from '../LoadingSpinner'; // Make sure this component exists
-import ToastNotification from '../ToastNotification'; // Make sure this component exists
+import { auth } from '../../firebase/config';
+import LoadingSpinner from '../LoadingSpinner';
+import ToastNotification from '../ToastNotification';
+
+// Use your actual Cloudinary cloud name and upload preset here
+const CLOUDINARY_CLOUD_NAME = 'dzflajft3';
+const CLOUDINARY_UPLOAD_PRESET = 'marketplace_products_upload'; // Replace with your upload preset
 
 /**
  * A form component to handle creating or editing a seller's profile.
@@ -29,7 +31,6 @@ export default function ProfileForm({ initialData, onSave }) {
 
   const router = useRouter();
 
-  // Set up auth state listener to get the userId
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -41,7 +42,6 @@ export default function ProfileForm({ initialData, onSave }) {
     return () => unsubscribe();
   }, [router]);
 
-  // Update form data and preview URL when initialData changes
   useEffect(() => {
     if (initialData) {
       setStoreName(initialData.storeName || '');
@@ -49,7 +49,7 @@ export default function ProfileForm({ initialData, onSave }) {
       setWhatsapp(initialData.whatsapp || '');
       setLocation(initialData.location || '');
       setPreviewURL(initialData.profileImage || '');
-      setProfileImageFile(null); // Reset file input
+      setProfileImageFile(null);
     }
   }, [initialData]);
 
@@ -62,27 +62,34 @@ export default function ProfileForm({ initialData, onSave }) {
   };
 
   /**
-   * Uploads the image file to Firebase Storage.
+   * Uploads the image file to Cloudinary.
    * @param {File} file - The image file to upload.
-   * @returns {Promise<string|null>} The download URL of the uploaded image, or null on failure.
+   * @returns {Promise<string|null>} The URL of the uploaded image, or null on failure.
    */
-  const uploadImage = async (file) => {
-    if (!file || !userId) {
-      return null;
-    }
+  const uploadImageToCloudinary = async (file) => {
+    if (!file) return null;
 
     setToast({ message: 'Uploading image...', type: 'info', isVisible: true });
     try {
-      // Use a unique filename to prevent conflicts
-      const filename = `profile_pictures/${userId}/${Date.now()}_${file.name}`;
-      const storageRef = ref(storage, filename);
-      
-      const snapshot = await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(snapshot.ref);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error.message || 'Cloudinary upload failed.');
+      }
+
+      const data = await response.json();
       setToast({ message: 'Image uploaded successfully!', type: 'success', isVisible: true });
-      return url;
+      return data.secure_url;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading image to Cloudinary:', error);
       setToast({ message: `Image upload failed: ${error.message}`, type: 'error', isVisible: true });
       return null;
     }
@@ -94,15 +101,13 @@ export default function ProfileForm({ initialData, onSave }) {
 
     let imageUrl = initialData?.profileImage || '';
     if (profileImageFile) {
-      imageUrl = await uploadImage(profileImageFile);
-      // If image upload failed, stop the form submission
+      imageUrl = await uploadImageToCloudinary(profileImageFile);
       if (!imageUrl) {
         setLoading(false);
         return;
       }
     }
     
-    // Call the onSave prop with the current form data and userId
     if (onSave) {
       await onSave({
         storeName,

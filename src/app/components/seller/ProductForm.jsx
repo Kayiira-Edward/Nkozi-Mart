@@ -3,21 +3,17 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, updateDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// Import the shared Firebase instances
-import { auth, db, storage } from '@/app/firebase/config';
+import { auth, db } from '@/app/firebase/config';
 import ToastNotification from "../ToastNotification";
-import LoadingSpinner from "../LoadingSpinner"; // Assuming you have a LoadingSpinner component
+import LoadingSpinner from "../LoadingSpinner";
 
-/**
- * A form component for adding and updating products.
- * It handles image uploads to Firebase Storage and data updates to Firestore.
- * @param {function} onSubmit - A callback function to be executed after a successful submission.
- * @param {object} initialData - The initial product data to populate the form for updates.
- */
+// Use your actual Cloudinary cloud name and upload preset here
+const CLOUDINARY_CLOUD_NAME = 'dzflajft3';
+const CLOUDINARY_UPLOAD_PRESET = 'marketplace_products_upload'; // Replace with your upload preset
+
 export default function ProductForm({ onSubmit, initialData }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -27,7 +23,6 @@ export default function ProductForm({ onSubmit, initialData }) {
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  // State for managing the toast notification
   const [toast, setToast] = useState({
     message: '',
     type: 'error',
@@ -36,28 +31,25 @@ export default function ProductForm({ onSubmit, initialData }) {
 
   const router = useRouter();
 
-  // Set up auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUserId(user.uid);
       } else {
-        router.push('/auth/login'); // Redirect to login if not authenticated
+        router.push('/auth/login');
       }
     });
     return () => unsubscribe();
   }, [router]);
 
-  // Update form data and preview URL when initialData changes
   useEffect(() => {
     if (initialData) {
       setName(initialData.name || '');
       setPrice(initialData.price || '');
       setDescription(initialData.description || '');
       setPreviewURL(initialData.image || '');
-      setImageFile(null); // Reset file input
+      setImageFile(null);
     } else {
-      // Reset form for adding new product
       setName('');
       setPrice('');
       setDescription('');
@@ -75,30 +67,35 @@ export default function ProductForm({ onSubmit, initialData }) {
   };
 
   /**
-   * Uploads an image file to Firebase Storage.
+   * Uploads the image file to Cloudinary.
    * @param {File} file - The image file to upload.
-   * @param {string} productId - The unique ID of the product.
-   * @returns {Promise<string|null>} The public download URL of the uploaded image.
+   * @returns {Promise<string|null>} The URL of the uploaded image, or null on failure.
    */
-  const uploadImage = async (file, productId) => {
+  const uploadImageToCloudinary = async (file) => {
     if (!file) return null;
+
+    setToast({ message: 'Uploading image...', type: 'info', isVisible: true });
     try {
-      const storageRef = ref(storage, `products/${userId}/${productId}/${file.name}`);
-      const snapshot = await uploadBytes(storageRef, file);
-      const imageUrl = await getDownloadURL(snapshot.ref);
-      setToast({
-        message: 'Image uploaded successfully!',
-        type: 'success',
-        isVisible: true,
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
       });
-      return imageUrl;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error.message || 'Cloudinary upload failed.');
+      }
+
+      const data = await response.json();
+      setToast({ message: 'Image uploaded successfully!', type: 'success', isVisible: true });
+      return data.secure_url;
     } catch (error) {
-      console.error('Error uploading image:', error);
-      setToast({
-        message: `Image upload failed: ${error.message}`,
-        type: 'error',
-        isVisible: true,
-      });
+      console.error('Error uploading image to Cloudinary:', error);
+      setToast({ message: `Image upload failed: ${error.message}`, type: 'error', isVisible: true });
       return null;
     }
   };
@@ -123,7 +120,7 @@ export default function ProductForm({ onSubmit, initialData }) {
         // --- Logic for Updating an Existing Product ---
         let imageUrl = initialData.image;
         if (imageFile) {
-          imageUrl = await uploadImage(imageFile, initialData.id);
+          imageUrl = await uploadImageToCloudinary(imageFile);
           if (!imageUrl) {
             setLoading(false);
             return;
@@ -156,18 +153,14 @@ export default function ProductForm({ onSubmit, initialData }) {
           return;
         }
 
-        // Get a unique Firestore ID first, then use it for the storage path
-        const productsCollection = collection(db, 'products');
-        const newProductRef = doc(productsCollection);
-        const productId = newProductRef.id;
-
-        const imageUrl = await uploadImage(imageFile, productId);
+        const imageUrl = await uploadImageToCloudinary(imageFile);
         if (!imageUrl) {
           setLoading(false);
           return;
         }
 
-        await setDoc(newProductRef, {
+        const productsCollection = collection(db, 'products');
+        await addDoc(productsCollection, {
           sellerId: userId,
           name,
           price: parseFloat(price),
@@ -182,15 +175,13 @@ export default function ProductForm({ onSubmit, initialData }) {
           isVisible: true,
         });
 
-        // Reset the form after successful addition
         setName('');
         setPrice('');
         setDescription('');
         setPreviewURL('');
         setImageFile(null);
       }
-      
-      // Call the onSubmit prop if it exists
+
       if (onSubmit) {
         onSubmit();
       }
