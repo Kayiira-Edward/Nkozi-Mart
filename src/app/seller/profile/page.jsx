@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,9 +8,12 @@ import { useRouter } from 'next/navigation';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { getFirestore, doc, collection, query, where, onSnapshot, setDoc } from 'firebase/firestore';
-import { Mail, Phone, MapPin, Share2, Pencil, X, Package, Save } from 'lucide-react';
-import ToastNotification from '../../components/ToastNotification';
-import Modal from '../../components/Modal';
+import { Mail, Phone, MapPin, Share2, Pencil, X, Package, Save, Image as ImageIcon, UploadCloud } from 'lucide-react';
+
+// Assuming these components are available at the specified paths.
+// In this self-contained example, we will define them locally or use placeholders.
+// import ToastNotification from '../../components/ToastNotification';
+// import Modal from '../../components/Modal';
 
 // IMPORTANT: These global variables are provided by the Canvas environment.
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -30,85 +35,277 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Inline ProfileForm component for self-contained code
-const ProfileForm = ({ initialData, onSave, onClose }) => {
-  const [formData, setFormData] = useState(initialData);
+// A simple ToastNotification component for this example
+const ToastNotification = ({ message, type, isVisible, onDismiss }) => {
+  if (!isVisible) return null;
+  const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+  return (
+    <div className={`fixed bottom-4 right-4 text-white p-4 rounded-lg shadow-lg ${bgColor}`}>
+      <span>{message}</span>
+      <button onClick={onDismiss} className="ml-4 font-bold">X</button>
+    </div>
+  );
+};
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prevData => ({ ...prevData, [name]: value }));
+// A simple Modal component for this example
+const Modal = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-xl p-6 relative max-h-[90vh] overflow-y-auto">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+// Use your actual Cloudinary cloud name and upload preset here
+const CLOUDINARY_CLOUD_NAME = 'dzflajft3';
+const CLOUDINARY_UPLOAD_PRESET = 'marketplace_products_upload'; // Replace with your upload preset
+
+
+// INLINE ProfileForm component with image upload and drag-and-drop functionality
+const ProfileForm = ({ initialData, onSave, onClose }) => {
+  const [storeName, setStoreName] = useState(initialData?.storeName || '');
+  const [description, setDescription] = useState(initialData?.description || '');
+  const [whatsapp, setWhatsapp] = useState(initialData?.whatsapp || '');
+  const [location, setLocation] = useState(initialData?.location || '');
+  
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [profilePreviewURL, setProfilePreviewURL] = useState(initialData?.profileImage || '');
+  const [isProfileDragging, setIsProfileDragging] = useState(false);
+
+  const [bannerImageFile, setBannerImageFile] = useState(null);
+  const [bannerPreviewURL, setBannerPreviewURL] = useState(initialData?.bannerImage || '');
+  const [isBannerDragging, setIsBannerDragging] = useState(false);
+  
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState({ message: '', type: '', isVisible: false });
+  
+  // Update form fields if initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setStoreName(initialData.storeName || '');
+      setDescription(initialData.description || '');
+      setWhatsapp(initialData.whatsapp || '');
+      setLocation(initialData.location || '');
+      setProfilePreviewURL(initialData.profileImage || '');
+      setBannerPreviewURL(initialData.bannerImage || '');
+      setProfileImageFile(null);
+      setBannerImageFile(null);
+    }
+  }, [initialData]);
+  
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileImageFile(file);
+      setProfilePreviewURL(URL.createObjectURL(file));
+    }
+  };
+  
+  const handleBannerImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerImageFile(file);
+      setBannerPreviewURL(URL.createObjectURL(file));
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleDragOver = (e) => { e.preventDefault(); };
+  const handleDragEnterProfile = (e) => { e.preventDefault(); setIsProfileDragging(true); };
+  const handleDragLeaveProfile = (e) => { e.preventDefault(); setIsProfileDragging(false); };
+  const handleDropProfile = (e) => {
     e.preventDefault();
-    onSave(formData);
+    setIsProfileDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) { setProfileImageFile(file); setProfilePreviewURL(URL.createObjectURL(file)); }
+  };
+  const handleDragEnterBanner = (e) => { e.preventDefault(); setIsBannerDragging(true); };
+  const handleDragLeaveBanner = (e) => { e.preventDefault(); setIsBannerDragging(false); };
+  const handleDropBanner = (e) => {
+    e.preventDefault();
+    setIsBannerDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) { setBannerImageFile(file); setBannerPreviewURL(URL.createObjectURL(file)); }
+  };
+
+  const uploadImageToCloudinary = async (file) => {
+    if (!file) return null;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error.message || 'Cloudinary upload failed.');
+      }
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error('Error uploading image to Cloudinary:', error);
+      setToast({ message: `Image upload failed: ${error.message}`, type: 'error', isVisible: true });
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    let profileImageUrl = initialData?.profileImage || '';
+    if (profileImageFile) {
+      setToast({ message: 'Uploading profile image...', type: 'info', isVisible: true });
+      profileImageUrl = await uploadImageToCloudinary(profileImageFile);
+      if (!profileImageUrl) {
+        setLoading(false);
+        return;
+      }
+    }
+    
+    let bannerImageUrl = initialData?.bannerImage || '';
+    if (bannerImageFile) {
+      setToast({ message: 'Uploading banner image...', type: 'info', isVisible: true });
+      bannerImageUrl = await uploadImageToCloudinary(bannerImageFile);
+      if (!bannerImageUrl) {
+        setLoading(false);
+        return;
+      }
+    }
+    
+    if (onSave) {
+      await onSave({
+        storeName,
+        description,
+        whatsapp,
+        location,
+        profileImage: profileImageUrl,
+        bannerImage: bannerImageUrl,
+      });
+    }
+
+    setLoading(false);
+    onClose();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="storeName" className="block text-sm font-medium text-gray-700">Store Name</label>
-        <input
-          type="text"
-          id="storeName"
-          name="storeName"
-          value={formData.storeName}
-          onChange={handleChange}
-          className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#2edc86] focus:border-[#2edc86]"
+    <div className="max-h-[60vh] overflow-y-auto pr-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+          <div className="w-full md:w-2/3">
+            <label className="block mb-2 text-sm font-medium text-gray-700">Banner Image</label>
+            <div
+              className={`relative w-full h-32 border-2 border-dashed rounded-xl overflow-hidden cursor-pointer transition-colors ${isBannerDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50'}`}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnterBanner}
+              onDragLeave={handleDragLeaveBanner}
+              onDrop={handleDropBanner}
+            >
+              {bannerPreviewURL ? (
+                <Image src={bannerPreviewURL} alt="Banner Preview" fill className="object-cover" />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-4 text-center text-gray-500">
+                  <UploadCloud className="w-8 h-8 mb-2" />
+                  <p className="text-sm font-semibold">Drag & drop or click to upload banner</p>
+                </div>
+              )}
+              <input type="file" id="bannerImage" name="bannerImage" accept="image/*" onChange={handleBannerImageChange} className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer" />
+            </div>
+          </div>
+          
+          <div className="w-full md:w-1/3">
+            <label className="block mb-2 text-sm font-medium text-gray-700">Profile Picture</label>
+            <div
+              className={`relative w-28 h-28 mx-auto rounded-full border-2 border-dashed overflow-hidden cursor-pointer transition-colors ${isProfileDragging ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50'}`}
+              onDragOver={handleDragOver}
+              onDragEnter={handleDragEnterProfile}
+              onDragLeave={handleDragLeaveProfile}
+              onDrop={handleDropProfile}
+            >
+              {profilePreviewURL ? (
+                <Image src={profilePreviewURL} alt="Profile Preview" fill className="object-cover" />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-2 text-gray-500">
+                  <ImageIcon className="w-8 h-8 mb-1" />
+                  <p className="text-xs text-center">Drag & drop or click</p>
+                </div>
+              )}
+              <input type="file" id="profileImage" name="profileImage" accept="image/*" onChange={handleProfileImageChange} className="absolute inset-0 z-10 w-full h-full opacity-0 cursor-pointer" />
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label htmlFor="storeName" className="block mb-1 text-sm font-medium text-gray-700">Store Name</label>
+          <input
+            type="text"
+            id="storeName"
+            name="storeName"
+            value={storeName}
+            onChange={(e) => setStoreName(e.target.value)}
+            className="w-full px-4 py-3 mt-1 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="description" className="block mb-1 text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            id="description"
+            name="description"
+            rows="3"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full px-4 py-3 mt-1 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="whatsapp" className="block mb-1 text-sm font-medium text-gray-700">WhatsApp Number</label>
+          <input
+            type="tel"
+            id="whatsapp"
+            name="whatsapp"
+            value={whatsapp}
+            onChange={(e) => setWhatsapp(e.target.value)}
+            className="w-full px-4 py-3 mt-1 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="location" className="block mb-1 text-sm font-medium text-gray-700">Location</label>
+          <input
+            type="text"
+            id="location"
+            name="location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="w-full px-4 py-3 mt-1 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
+            required
+          />
+        </div>
+
+        <div className="flex justify-end pt-4">
+          <button
+            type="submit"
+            className="px-6 py-3 font-semibold text-white transition-colors bg-[#2edc86] rounded-full shadow-md hover:bg-[#25b36b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2edc86] disabled:opacity-50"
+            disabled={loading}
+          >
+            {loading ? <LoadingSpinner /> : 'Save Changes'}
+          </button>
+        </div>
+        
+        <ToastNotification
+          message={toast.message}
+          type={toast.type}
+          isVisible={toast.isVisible}
+          onDismiss={() => setToast({ ...toast, isVisible: false })}
         />
-      </div>
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-        <textarea
-          id="description"
-          name="description"
-          value={formData.description}
-          onChange={handleChange}
-          rows="3"
-          className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#2edc86] focus:border-[#2edc86]"
-        />
-      </div>
-      <div>
-        <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-        <input
-          type="text"
-          id="location"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#2edc86] focus:border-[#2edc86]"
-        />
-      </div>
-      <div>
-        <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-700">WhatsApp Number</label>
-        <input
-          type="tel"
-          id="whatsapp"
-          name="whatsapp"
-          value={formData.whatsapp}
-          onChange={handleChange}
-          className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#2edc86] focus:border-[#2edc86]"
-          placeholder="e.g., +15551234567"
-        />
-      </div>
-      {/* Note: In a real app, you would handle image uploads here */}
-      <div className="flex justify-end pt-4">
-        <button
-          type="button"
-          onClick={onClose}
-          className="px-4 py-2 mr-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="flex items-center px-4 py-2 text-sm font-medium text-white bg-[#2edc86] border border-transparent rounded-md shadow-sm hover:bg-[#25b36b] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2edc86]"
-        >
-          <Save className="w-4 h-4 mr-2" />
-          Save Changes
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 };
 
