@@ -3,45 +3,40 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
-
-// Import the shared Firebase instances
 import { db, auth } from "@/app/firebase/config";
 
-// 1. Create the Context
 const CartContext = createContext(null);
 
-// 2. Create the Provider Component
-export function CartProvider({ children }) {
+export default function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
   const [user, setUser] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load cart items from Firestore based on the authenticated user
+  // Set up auth state listener to track the current user
   useEffect(() => {
-    // Set up an auth state listener to get the current user
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
     });
     return () => unsubscribeAuth();
   }, []);
 
+  // Sync cart with Firestore (for authenticated users) or local storage (for unauthenticated users)
   useEffect(() => {
     if (!user) {
-      setCartItems([]);
+      // User is not authenticated, load from local storage
+      const localCart = JSON.parse(localStorage.getItem('cartItems')) || [];
+      setCartItems(localCart);
       setIsInitialized(true);
       return;
     }
 
-    // Reference to the user's cart document in Firestore
+    // User is authenticated, sync with Firestore
     const cartDocRef = doc(db, "carts", user.uid);
-
-    // Set up a real-time listener for the cart document
     const unsubscribeFirestore = onSnapshot(cartDocRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setCartItems(data.items || []);
       } else {
-        // If the cart document doesn't exist, set it with an empty array
         setDoc(cartDocRef, { items: [] }, { merge: true });
         setCartItems([]);
       }
@@ -51,14 +46,19 @@ export function CartProvider({ children }) {
       setIsInitialized(true);
     });
 
-    // Cleanup the Firestore listener when the component unmounts
     return () => unsubscribeFirestore();
   }, [user]);
 
-  // 3. Define the Cart-related functions that update Firestore
+  // Save cart to local storage whenever cartItems change, but ONLY for unauthenticated users
+  useEffect(() => {
+    if (!user && isInitialized) {
+      localStorage.setItem('cartItems', JSON.stringify(cartItems));
+    }
+  }, [cartItems, user, isInitialized]);
+
   const updateCartInFirestore = async (items) => {
     if (!user) {
-      console.error("User not authenticated. Cannot update cart.");
+      console.error("User not authenticated. Cannot update cart in Firestore.");
       return;
     }
     const cartDocRef = doc(db, "carts", user.uid);
@@ -74,24 +74,32 @@ export function CartProvider({ children }) {
       (cartItem) => cartItem.id === item.id
     );
 
+    let updatedCartItems;
     if (existingItemIndex > -1) {
-      // If item exists, increase its quantity
-      const updatedCartItems = [...cartItems];
+      updatedCartItems = [...cartItems];
       updatedCartItems[existingItemIndex].quantity += 1;
-      updateCartInFirestore(updatedCartItems);
     } else {
-      // Otherwise, add the new item with quantity 1
-      updateCartInFirestore([...cartItems, { ...item, quantity: 1 }]);
+      updatedCartItems = [...cartItems, { ...item, quantity: 1 }];
+    }
+    setCartItems(updatedCartItems);
+    if (user) {
+      updateCartInFirestore(updatedCartItems);
     }
   };
 
   const removeItem = (itemId) => {
     const updatedCartItems = cartItems.filter((cartItem) => cartItem.id !== itemId);
-    updateCartInFirestore(updatedCartItems);
+    setCartItems(updatedCartItems);
+    if (user) {
+      updateCartInFirestore(updatedCartItems);
+    }
   };
 
   const clearCart = () => {
-    updateCartInFirestore([]);
+    setCartItems([]);
+    if (user) {
+      updateCartInFirestore([]);
+    }
   };
 
   const updateQuantity = (itemId, newQuantity) => {
@@ -101,11 +109,13 @@ export function CartProvider({ children }) {
       const updatedCartItems = cartItems.map((item) =>
         item.id === itemId ? { ...item, quantity: newQuantity } : item
       );
+      setCartItems(updatedCartItems);
+      if (user) {
       updateCartInFirestore(updatedCartItems);
+      }
     }
   };
 
-  // 4. Provide the value to the consuming components
   const value = {
     cartItems,
     addToCart,
@@ -115,14 +125,16 @@ export function CartProvider({ children }) {
   };
 
   if (!isInitialized) {
-    // Optional: Return a loading state while the cart is being fetched
-    return <div>Loading cart...</div>;
+    return (
+        <div className="flex items-center justify-center min-h-screen text-gray-500">
+            Loading cart...
+        </div>
+    );
   }
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
-// 5. Create a custom hook for easy consumption of the context
 export function useCart() {
   const context = useContext(CartContext);
   if (context === null) {

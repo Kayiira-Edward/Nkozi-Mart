@@ -1,16 +1,61 @@
-"use client";
+'use client';
 
+import { useState, useEffect } from "react";
 import { useCart } from "../providers/CartProvider";
 import Link from "next/link";
+import Image from "next/image";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShoppingCart, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../firebase/config";
+
+const DEFAULT_IMAGE_URL = "https://placehold.co/400x400/E8F5E9/1E8449?text=No+Image";
 
 export default function CartPage() {
   const { cartItems, removeItem, updateQuantity } = useCart();
+  const [sellersData, setSellersData] = useState({});
+  const [isLoadingSellers, setIsLoadingSellers] = useState(true);
 
-  // Group cart items by seller
+  // Fetch seller data from Firestore based on unique seller IDs in the cart
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      setIsLoadingSellers(false);
+      setSellersData({});
+      return;
+    }
+
+    const uniqueSellerIds = [...new Set(cartItems.map(item => item.sellerId))];
+    
+    // Check if uniqueSellerIds array is not empty before querying Firestore
+    if (uniqueSellerIds.length === 0) {
+      setIsLoadingSellers(false);
+      return;
+    }
+
+    const fetchSellers = async () => {
+      try {
+        const sellersCollectionRef = collection(db, "sellers");
+        const q = query(sellersCollectionRef, where("uid", "in", uniqueSellerIds));
+        
+        const snapshot = await getDocs(q);
+        const fetchedSellers = {};
+        snapshot.forEach(doc => {
+          fetchedSellers[doc.data().uid] = doc.data();
+        });
+        setSellersData(fetchedSellers);
+      } catch (error) {
+        console.error("Error fetching seller data:", error);
+      } finally {
+        setIsLoadingSellers(false);
+      }
+    };
+
+    fetchSellers();
+  }, [cartItems]);
+
+  // Group cart items by seller ID
   const groupedItems = cartItems.reduce((acc, item) => {
-    (acc[item.shop] = acc[item.shop] || []).push(item);
+    (acc[item.sellerId] = acc[item.sellerId] || []).push(item);
     return acc;
   }, {});
 
@@ -19,10 +64,15 @@ export default function CartPage() {
     0
   );
 
-  // Function to generate the WhatsApp order link for a seller
-  const generateWhatsAppLink = (shopItems, shopName) => {
-    const sellerPhoneNumber = "25677xxxxxxx"; // ⚠️ REPLACE THIS WITH THE SELLER'S ACTUAL PHONE NUMBER
-    let message = `Hello ${shopName}, I would like to order the following items:\n\n`;
+  // Function to generate the WhatsApp order link for a specific seller
+  const generateWhatsAppLink = (shopItems, sellerId) => {
+    const seller = sellersData[sellerId];
+    if (!seller || !seller.phoneNumber) {
+      console.error("Seller data or phone number not found for seller ID:", sellerId);
+      return "#"; // Return a dead link if data is missing
+    }
+    
+    let message = `Hello ${seller.shopName}, I would like to order the following items:\n\n`;
 
     let subtotal = 0;
     shopItems.forEach((item) => {
@@ -33,9 +83,16 @@ export default function CartPage() {
 
     message += `\nTotal for this order: UGX ${subtotal.toLocaleString()}`;
 
-    // URL-encode the message to handle spaces and special characters
-    return `https://wa.me/${sellerPhoneNumber}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${seller.phoneNumber}?text=${encodeURIComponent(message)}`;
   };
+
+  if (isLoadingSellers) {
+    return (
+      <div className="min-h-screen p-6 bg-[#f0f2f5] font-sans flex items-center justify-center">
+        <p className="text-xl font-medium text-gray-600">Loading cart details...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-6 bg-[#f0f2f5] font-sans">
@@ -68,26 +125,31 @@ export default function CartPage() {
           </div>
         ) : (
           <div>
-            {Object.keys(groupedItems).map((shopName) => {
-              const shopItems = groupedItems[shopName];
+            {Object.keys(groupedItems).map((sellerId) => {
+              const shopItems = groupedItems[sellerId];
+              const seller = sellersData[sellerId] || { shopName: "Unknown Seller" };
               const shopSubtotal = shopItems.reduce(
                 (total, item) => total + item.price * item.quantity,
                 0
               );
               return (
-                <div key={shopName} className="p-6 mb-8 bg-white shadow-md rounded-3xl">
+                <div key={sellerId} className="p-6 mb-8 bg-white shadow-md rounded-3xl">
                   <h2 className="pb-3 mb-4 text-2xl font-bold text-[#181a1f] border-b border-gray-100">
-                    Seller: {shopName}
+                    Seller: {seller.shopName}
                   </h2>
                   <ul className="divide-y divide-gray-100">
                     {shopItems.map((item) => (
                       <li key={item.id} className="flex flex-col items-start justify-between py-6 md:flex-row md:items-center">
                         <div className="flex items-start flex-grow mb-4 md:mb-0">
-                          <img
-                            src={item.img}
-                            alt={item.name}
-                            className="object-cover w-20 h-20 mr-4 rounded-xl"
-                          />
+                          <div className="relative w-20 h-20 mr-4 rounded-xl">
+                            <Image
+                              src={item.imageUrl || DEFAULT_IMAGE_URL}
+                              alt={item.name}
+                              fill
+                              style={{ objectFit: 'cover' }}
+                              className="rounded-xl"
+                            />
+                          </div>
                           <div>
                             <h3 className="text-lg font-medium text-[#181a1f]">
                               {item.name}
@@ -139,17 +201,17 @@ export default function CartPage() {
                     ))}
                   </ul>
                   <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-100">
-                    <p className="font-semibold text-gray-800">Subtotal for {shopName}:</p>
+                    <p className="font-semibold text-gray-800">Subtotal for {seller.shopName}:</p>
                     <p className="font-bold text-[#2edc86]">UGX {shopSubtotal.toLocaleString()}</p>
                   </div>
                   <div className="mt-6 text-right">
                     <a
-                      href={generateWhatsAppLink(shopItems, shopName)}
+                      href={generateWhatsAppLink(shopItems, sellerId)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block px-8 py-4 text-white transition-all bg-[#2edc86] rounded-full shadow-lg hover:bg-[#4ade80]"
                     >
-                      Order from {shopName}
+                      Order from {seller.shopName}
                     </a>
                   </div>
                 </div>
