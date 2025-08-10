@@ -501,6 +501,12 @@
 //     </main>
 //   );
 // }
+
+
+
+
+
+
 'use client';
 
 import { useState, useEffect, useRef } from "react";
@@ -519,7 +525,7 @@ const banners = [
     title: "Flash Sale!",
     description: "Get up to 50% off on selected items!",
     bgColor: "from-orange-400 to-orange-500",
-    img: "/assets/images/one.jpg",
+    img: "/../public/logo.png",
     sellerName: "Boda Bitez",
   },
   {
@@ -527,7 +533,7 @@ const banners = [
     title: "Order via WhatsApp!",
     description: "Chat with us for quick orders & support.",
     bgColor: "from-green-500 to-green-600",
-    img: "/assets/images/one.jpg",
+    img: "/../public/logo.png",
     sellerName: "Campus Mart",
   },
   {
@@ -535,7 +541,8 @@ const banners = [
     title: "New Arrivals!",
     description: "Discover the latest products in our store.",
     bgColor: "from-blue-400 to-blue-600",
-    img: "/assets/images/one.jpg",
+    img: "/../public/logo.png",
+
     sellerName: "Fresh Finds",
   },
 ];
