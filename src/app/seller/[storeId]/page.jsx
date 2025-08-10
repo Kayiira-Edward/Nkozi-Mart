@@ -139,6 +139,8 @@ export default function StoreDashboardPage() {
         message={toast.message}
         type={toast.type}
         isVisible={toast.isVisible}
+
+
         onDismiss={() => setToast({ ...toast, isVisible: false })}
       />
     </div>

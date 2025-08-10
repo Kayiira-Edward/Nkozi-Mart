@@ -511,13 +511,13 @@ export default function SellerProfilePage() {
                     <Pencil className="w-4 h-4 mr-2" />
                     Edit Profile
                 </button>
-                <button
+                {/* <button
                     onClick={handleShareProfile}
                     className="flex-1 sm:flex-none flex items-center justify-center px-3 py-1.5 text-sm font-semibold text-white bg-blue-500 rounded-full shadow-md hover:bg-blue-600 transition-colors transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
                 >
                     <Share2 className="w-4 h-4 mr-2" />
                     Share Profile
-                </button>
+                </button> */}
           </div>
         </div>
 
@@ -560,7 +560,7 @@ export default function SellerProfilePage() {
           </div>
         ) : (
           <div className="flex items-center justify-center p-12 text-center text-gray-500 bg-white shadow-inner rounded-2xl">
-            <p>This seller has no products listed yet.</p>
+            <p>U gat no products listed yet.</p>
           </div>
         )}
       </div>
