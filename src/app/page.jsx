@@ -56,6 +56,7 @@ export default function HomePage() {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
+  const [sortOption, setSortOption] = useState("Latest"); // New state for sorting
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
   const [products, setProducts] = useState([]);
   const [sellers, setSellers] = useState({});
@@ -157,6 +158,7 @@ export default function HomePage() {
     }
   };
 
+  // Filter products based on search term and category
   const filteredProducts = products.filter((product) => {
     const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
@@ -166,6 +168,21 @@ export default function HomePage() {
       (sellers[product.sellerId]?.storeName.toLowerCase().includes(lowerCaseSearchTerm)) ||
       (product.color && product.color.toLowerCase().includes(lowerCaseSearchTerm));
     return matchesCategory && matchesSearch;
+  });
+
+  // Sort filtered products based on the selected sort option
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortOption) {
+      case "Price: Low to High":
+        return a.price - b.price;
+      case "Price: High to Low":
+        return b.price - a.price;
+      case "Latest":
+      default:
+        // Assuming products are already sorted by createdAt, which is the default fetch behavior
+        // Or if 'createdAt' is a timestamp, we can compare them directly
+        return b.createdAt - a.createdAt; 
+    }
   });
 
   return (
@@ -380,12 +397,23 @@ export default function HomePage() {
         </div>
 
         <div>
-          <h2 className="mb-3 text-lg font-semibold text-[#181a1f]">
-            Recommended for You
-          </h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-[#181a1f]">
+              Recommended for You
+            </h2>
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="px-3 py-1 text-sm text-gray-700 bg-white border-2 border-gray-100 rounded-full shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86]"
+            >
+              <option value="Latest">Latest</option>
+              <option value="Price: Low to High">Price: Low to High</option>
+              <option value="Price: High to Low">Price: High to Low</option>
+            </select>
+          </div>
           <div className="grid grid-cols-2 gap-4 pb-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {filteredProducts.length > 0 ? (
-              filteredProducts.map((item) => {
+          {sortedProducts.length > 0 ? (
+              sortedProducts.map((item) => {
                 const seller = sellers[item.sellerId] || {};
                 return (
                   <div
@@ -452,9 +480,9 @@ export default function HomePage() {
         <div className="flex justify-around py-3">
           <Link
             href="/"
-            className="flex flex-col items-center text-[#2edc86] font-medium"
+            className="flex flex-col items-center font-medium text-[#2edc86]"
           >
-            <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#e6fcf0]">
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#e6fcf0]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-6 h-6"
