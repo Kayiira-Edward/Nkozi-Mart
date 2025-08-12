@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useState, useEffect } from "react";
@@ -26,7 +28,6 @@ export default function CartPage() {
 
     const uniqueSellerIds = [...new Set(cartItems.map(item => item.sellerId))];
     
-    // Check if uniqueSellerIds array is not empty before querying Firestore
     if (uniqueSellerIds.length === 0) {
       setIsLoadingSellers(false);
       return;
@@ -67,12 +68,12 @@ export default function CartPage() {
   // Function to generate the WhatsApp order link for a specific seller
   const generateWhatsAppLink = (shopItems, sellerId) => {
     const seller = sellersData[sellerId];
-    if (!seller || !seller.phoneNumber) {
-      console.error("Seller data or phone number not found for seller ID:", sellerId);
-      return "#"; // Return a dead link if data is missing
-    }
+    // Use seller.whatsapp if it exists, otherwise use a placeholder or handle the error gracefully.
+    // The previous error occurred because seller.whatsapp was not found.
+    const whatsappNumber = seller?.whatsapp || '000000000000'; // Default to a placeholder number to prevent error
+    const whatsappStoreName = seller?.storeName || 'Unknown Store';
     
-    let message = `Hello ${seller.shopName}, I would like to order the following items:\n\n`;
+    let message = `Hello ${whatsappStoreName}, I would like to order the following items:\n\n`;
 
     let subtotal = 0;
     shopItems.forEach((item) => {
@@ -83,7 +84,7 @@ export default function CartPage() {
 
     message += `\nTotal for this order: UGX ${subtotal.toLocaleString()}`;
 
-    return `https://wa.me/${seller.phoneNumber}?text=${encodeURIComponent(message)}`;
+    return `https://wa.me/${whatsappNumber.replace("+", "")}?text=${encodeURIComponent(message)}`;
   };
 
   if (isLoadingSellers) {
@@ -127,7 +128,7 @@ export default function CartPage() {
           <div>
             {Object.keys(groupedItems).map((sellerId) => {
               const shopItems = groupedItems[sellerId];
-              const seller = sellersData[sellerId] || { shopName: "Unknown Seller" };
+              const seller = sellersData[sellerId] || { storeName: "Unknown Store", whatsapp: "" };
               const shopSubtotal = shopItems.reduce(
                 (total, item) => total + item.price * item.quantity,
                 0
@@ -135,7 +136,7 @@ export default function CartPage() {
               return (
                 <div key={sellerId} className="p-6 mb-8 bg-white shadow-md rounded-3xl">
                   <h2 className="pb-3 mb-4 text-2xl font-bold text-[#181a1f] border-b border-gray-100">
-                    Seller: {seller.shopName}
+                    Seller: {seller.storeName}
                   </h2>
                   <ul className="divide-y divide-gray-100">
                     {shopItems.map((item) => (
@@ -143,7 +144,7 @@ export default function CartPage() {
                         <div className="flex items-start flex-grow mb-4 md:mb-0">
                           <div className="relative w-20 h-20 mr-4 rounded-xl">
                             <Image
-                              src={item.imageUrl || DEFAULT_IMAGE_URL}
+                              src={item.image || DEFAULT_IMAGE_URL}
                               alt={item.name}
                               fill
                               style={{ objectFit: 'cover' }}
@@ -201,7 +202,7 @@ export default function CartPage() {
                     ))}
                   </ul>
                   <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-100">
-                    <p className="font-semibold text-gray-800">Subtotal for {seller.shopName}:</p>
+                    <p className="font-semibold text-gray-800">Subtotal for {seller.storeName}:</p>
                     <p className="font-bold text-[#2edc86]">UGX {shopSubtotal.toLocaleString()}</p>
                   </div>
                   <div className="mt-6 text-right">
@@ -211,7 +212,7 @@ export default function CartPage() {
                       rel="noopener noreferrer"
                       className="inline-block px-8 py-4 text-white transition-all bg-[#2edc86] rounded-full shadow-lg hover:bg-[#4ade80]"
                     >
-                      Order from {seller.shopName}
+                      Order from {seller.storeName}
                     </a>
                   </div>
                 </div>

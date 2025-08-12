@@ -20,13 +20,7 @@ export default function LoginForm() {
 
     const router = useRouter();
 
-    // Removed useEffect console.log for cleaner output and to rule out subtle React issues
-    // useEffect(() => {
-    //     console.log('LoginForm mounted. Auth object:', auth);
-    //     if (!auth) {
-    //         setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
-    //     }
-    // }, []);
+    
 
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);

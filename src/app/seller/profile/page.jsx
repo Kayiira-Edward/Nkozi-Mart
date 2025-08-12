@@ -10,10 +10,6 @@ import { getAuth, signInWithCustomToken, onAuthStateChanged, signInAnonymously }
 import { getFirestore, doc, collection, query, where, onSnapshot, setDoc } from 'firebase/firestore';
 import { Mail, Phone, MapPin, Share2, Pencil, X, Package, Save, Image as ImageIcon, UploadCloud } from 'lucide-react';
 
-// Assuming these components are available at the specified paths.
-// In this self-contained example, we will define them locally or use placeholders.
-// import ToastNotification from '../../components/ToastNotification';
-// import Modal from '../../components/Modal';
 
 // IMPORTANT: These global variables are provided by the Canvas environment.
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -11,10 +12,20 @@ import { Eye, EyeOff } from 'lucide-react';
 import { auth, db } from '@/app/firebase/config';
 import ToastNotification from "@/app/components/ToastNotification";
 
+// Define a list of common country codes.
+const countryCodes = [
+    { code: "+256", name: "Uganda" },
+    { code: "+1", name: "USA" },
+    { code: "+44", name: "UK" },
+    { code: "+254", name: "Kenya" },
+    // Add more country codes as needed
+];
+
 export default function RegisterForm() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [storeName, setStoreName] = useState('');
+    const [contactCode, setContactCode] = useState('+256');
     const [contactNumber, setContactNumber] = useState('');
     const [error, setError] = useState('');
     const [passwordErrors, setPasswordErrors] = useState([]);
@@ -23,14 +34,6 @@ export default function RegisterForm() {
     const [toast, setToast] = useState({ message: '', type: 'info', isVisible: false });
 
     const router = useRouter();
-
-    // Removed useEffect console.log for cleaner output and to rule out subtle React issues
-    // useEffect(() => {
-    //     console.log('RegisterForm mounted. Auth object:', auth);
-    //     if (!auth) {
-    //         setToast({ message: 'Firebase Auth not initialized. Please check configuration.', type: 'error', isVisible: true });
-    //     }
-    // }, []);
 
     const validatePassword = (pwd) => {
         const errors = [];
@@ -91,14 +94,24 @@ export default function RegisterForm() {
             setLoading(false);
             return;
         }
+        
+        // NEW: Phone number validation
+        if (contactNumber.startsWith('0')) {
+            setError('Please enter the phone number without the leading zero (e.g., 772123456).');
+            setToast({ message: 'Please enter the phone number without the leading zero.', type: 'error', isVisible: true });
+            setLoading(false);
+            return;
+        }
 
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            const fullPhoneNumber = `${contactCode}${contactNumber}`;
+            
             await setDoc(doc(db, 'sellers', user.uid), {
-                storeName: storeName,
-                contactNumber: contactNumber,
+                shopName: storeName,
+                whatsapp: fullPhoneNumber,
                 email: user.email,
                 createdAt: new Date(),
                 isSeller: true,
@@ -128,7 +141,6 @@ export default function RegisterForm() {
             <div className="flex flex-col w-full max-w-4xl overflow-hidden bg-white shadow-2xl md:flex-row rounded-3xl">
                 {/* Left Section - Aesthetic Background */}
                 <div className="relative flex flex-col items-center justify-between p-8 text-center text-white md:w-1/2 bg-gradient-to-br from-teal-400 to-green-600">
-                    {/* Abstract shapes for design */}
                     <div className="absolute inset-0 opacity-20">
                         <svg className="w-full h-full" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="10%" cy="10%" r="15" fill="currentColor" className="text-emerald-300" />
@@ -210,15 +222,33 @@ export default function RegisterForm() {
                         </div>
                         <div>
                             <label htmlFor="contactNumber" className="block mb-2 text-sm font-medium text-gray-700">WhatsApp Contact Number</label>
-                            <input
-                                type="tel"
-                                id="contactNumber"
-                                value={contactNumber}
-                                onChange={(e) => setContactNumber(e.target.value)}
-                                required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
-                                placeholder="e.g., +2567XXXXXXXX"
-                            />
+                            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                                <select
+                                    id="countryCode"
+                                    value={contactCode}
+                                    onChange={(e) => setContactCode(e.target.value)}
+                                    className="px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
+                                >
+                                    {countryCodes.map((country, index) => (
+                                        <option key={index} value={country.code}>
+                                            {country.code} ({country.name})
+                                        </option>
+                                    ))}
+                                </select>
+                                <input
+                                    type="tel"
+                                    id="contactNumber"
+                                    value={contactNumber}
+                                    onChange={(e) => setContactNumber(e.target.value)}
+                                    required
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2edc86] focus:border-transparent transition-all"
+                                    placeholder="e.g., 7XXXXXXXX"
+                                />
+                            </div>
+                            {/* NEW: Display a helpful message to the user */}
+                            <p className="mt-2 text-sm text-gray-500">
+                                Please enter your number without the leading zero (e.g., 772123456).
+                            </p>
                         </div>
                         {error && <p className="text-sm text-center text-red-600">{error}</p>}
                         <button
