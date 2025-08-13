@@ -110,7 +110,8 @@ export default function RegisterForm() {
             const fullPhoneNumber = `${contactCode}${contactNumber}`;
             
             await setDoc(doc(db, 'sellers', user.uid), {
-                shopName: storeName,
+                storeName: storeName,
+                // from shopeName to storename
                 whatsapp: fullPhoneNumber,
                 email: user.email,
                 createdAt: new Date(),
