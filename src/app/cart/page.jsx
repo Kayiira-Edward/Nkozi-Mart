@@ -17,7 +17,14 @@ const hostels = [
   "Canaan",
   "Bossa",
   "Campbell",
+  "Onyango",
+  "Mugaga",
+  "Mukasa",
+  "Martyrs",
+  "Carabine",
+  "Haflet",
 ];
+
 
 export default function CartPage() {
   const { cartItems, removeItem, updateQuantity } = useCart();
