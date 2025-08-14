@@ -92,12 +92,12 @@ export default function HomePage() {
     const fetchData = async () => {
       try {
         // 1. Fetch all products
-        const productsQuery = query(collection(db, "products"), orderBy("createdAt", "desc"));
+        const productsQuery = query(collection(db, "products"));
         const productsSnapshot = await getDocs(productsQuery);
         const productsList = productsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-          // price: getRandomPrice(), // Override with a random price
+          price: getRandomPrice(), // Override with a random price
         }));
         
         // Shuffle the products list for a "random" feel
@@ -139,13 +139,12 @@ export default function HomePage() {
         img: product.image || "/logo.png",
         sellerId: product.sellerId,
         bgColor: bannerBackgrounds[index % bannerBackgrounds.length],
+        price: product.price, // Make sure to pass the price to the banner
       }));
       
       setDynamicBanners(newBanners);
     }
   }, [products]);
-
-  // Removed the handleSellerClick function as it's no longer needed
 
   const handleCategoriesClick = () => {
     if (searchInputRef.current) {
@@ -323,22 +322,20 @@ export default function HomePage() {
                   <p className="text-sm text-white text-opacity-80 line-clamp-3">
                     {banner.description}
                   </p>
-                  {/* Changed the button to a Link component */}
-                  <Link
-                    href={`/seller/${banner.sellerId}`}
-                    passHref
-                    className="inline-block"
+                  {/*
+                    * CHANGED: The button now calls addToCart directly instead of
+                    * navigating to a seller's page. The banner data is now passed to the
+                    * function to add the corresponding product to the cart.
+                  */}
+                  {/* <button 
+                    onClick={() => addToCart(banner)} // Pass the banner object, which contains all product details
+                    className="px-5 py-2 mt-4 text-sm font-semibold text-white transition-colors rounded-full shadow-md bg-white/20 hover:bg-white/40"
                   >
-                    <button className="px-5 py-2 mt-4 text-sm font-semibold text-white transition-colors rounded-full shadow-md bg-white/20 hover:bg-white/40">
-                      Order from {sellers[banner.sellerId]?.storeName || "Unknown Store"}
-                    </button>
-                  </Link>
+                    Add to Cart
+                  </button> */}
                 </div>
-                {/* Updated: This div now uses pb-[75%] to create a 4:3 aspect ratio container,
-                  ensuring the image is always a consistent size and well-visible.
-                */}
                 <div className="relative w-full p-2 md:w-1/2">
-                    <div className="relative w-full pb-[75%]"> {/* 4:3 Aspect Ratio */}
+                    <div className="relative w-full pb-[75%]">
                         <Image
                             src={banner.img}
                             alt={banner.title}
@@ -560,3 +557,4 @@ export default function HomePage() {
     </main>
   );
 }
+
