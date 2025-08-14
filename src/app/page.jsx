@@ -97,7 +97,6 @@ export default function HomePage() {
         const productsList = productsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
-          price: getRandomPrice(), // Override with a random price
         }));
         
         // Shuffle the products list for a "random" feel
