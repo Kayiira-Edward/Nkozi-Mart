@@ -189,13 +189,13 @@ export default function HomePage() {
         <Link href="/" className="flex items-center flex-shrink-0 space-x-2">
           <Image
             src="/logo.png"
-            alt="Ugbuy Logo"
+            alt="Nkozi Mart Logo"
             width={40}
             height={40}
             className="rounded-full"
             priority
           />
-          <span className="text-xl font-bold text-[#181a1f]">Ugbuy</span>
+          <span className="text-xl font-bold text-green-500 ">Nkozi Mart</span>
         </Link>
         <div className="items-center hidden space-x-6 md:flex">
           <Link
