@@ -145,9 +145,7 @@ export default function HomePage() {
     }
   }, [products]);
 
-  const handleSellerClick = (sellerName, sellerId) => {
-    console.log(`Navigating to seller profile: ${sellerName} (ID: ${sellerId})`);
-  };
+  // Removed the handleSellerClick function as it's no longer needed
 
   const handleCategoriesClick = () => {
     if (searchInputRef.current) {
@@ -325,9 +323,16 @@ export default function HomePage() {
                   <p className="text-sm text-white text-opacity-80 line-clamp-3">
                     {banner.description}
                   </p>
-                  <button className="px-5 py-2 mt-4 text-sm font-semibold text-white transition-colors rounded-full shadow-md bg-white/20 hover:bg-white/40">
-                    Order from {sellers[banner.sellerId]?.storeName || "Unknown Store"}
-                  </button>
+                  {/* Changed the button to a Link component */}
+                  <Link
+                    href={`/seller/${banner.sellerId}`}
+                    passHref
+                    className="inline-block"
+                  >
+                    <button className="px-5 py-2 mt-4 text-sm font-semibold text-white transition-colors rounded-full shadow-md bg-white/20 hover:bg-white/40">
+                      Order from {sellers[banner.sellerId]?.storeName || "Unknown Store"}
+                    </button>
+                  </Link>
                 </div>
                 {/* Updated: This div now uses pb-[75%] to create a 4:3 aspect ratio container,
                   ensuring the image is always a consistent size and well-visible.
@@ -434,14 +439,14 @@ export default function HomePage() {
                     <p className="text-base font-semibold text-gray-900 truncate">
                       {item.name}
                     </p>
-                    <button
-                      onClick={() => handleSellerClick(seller.storeName, item.sellerId)}
+                    <Link
+                      href={`/seller/${item.sellerId}`} // Link to the seller's page
                       className="mt-1 mb-2 text-left focus:outline-none"
                     >
                       <p className="text-sm font-small text-gray-400 truncate transition-colors hover:text-[#2edc86]">
                         {seller.storeName || "Unknown Store"}
                       </p>
-                    </button>
+                    </Link>
                     <div className="flex items-center justify-between mt-auto">
                       <p className="font-bold text-[#2edc86] text-lg">
                         UGX {item.price.toLocaleString()}
