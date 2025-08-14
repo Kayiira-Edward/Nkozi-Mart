@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -13,10 +12,20 @@ import { db } from "../firebase/config";
 
 const DEFAULT_IMAGE_URL = "https://placehold.co/400x400/E8F5E9/1E8449?text=No+Image";
 
+const hostels = [
+  "Katonga",
+  "Canaan",
+  "Bossa",
+  "Campbell",
+];
+
 export default function CartPage() {
   const { cartItems, removeItem, updateQuantity } = useCart();
   const [sellersData, setSellersData] = useState({});
   const [isLoadingSellers, setIsLoadingSellers] = useState(true);
+  const [selectedHostel, setSelectedHostel] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
+  const [toastMessage, setToastMessage] = useState(null);
 
   // Fetch seller data from Firestore based on unique seller IDs in the cart
   useEffect(() => {
@@ -54,6 +63,14 @@ export default function CartPage() {
     fetchSellers();
   }, [cartItems]);
 
+  // Function to display the toast notification
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000); // Hide the toast after 3 seconds
+  };
+
   // Group cart items by seller ID
   const groupedItems = cartItems.reduce((acc, item) => {
     (acc[item.sellerId] = acc[item.sellerId] || []).push(item);
@@ -66,14 +83,17 @@ export default function CartPage() {
   );
 
   // Function to generate the WhatsApp order link for a specific seller
-  const generateWhatsAppLink = (shopItems, sellerId) => {
+  const generateWhatsAppLink = (shopItems, sellerId, hostel, room) => {
     const seller = sellersData[sellerId];
-    // Use seller.whatsapp if it exists, otherwise use a placeholder or handle the error gracefully.
-    // The previous error occurred because seller.whatsapp was not found.
-    const whatsappNumber = seller?.whatsapp || '000000000000'; // Default to a placeholder number to prevent error
+    const whatsappNumber = seller?.whatsapp || '000000000000';
     const whatsappStoreName = seller?.storeName || 'Unknown Store';
     
     let message = `Hello ${whatsappStoreName}, I would like to order the following items:\n\n`;
+    
+    // Add delivery details to the message
+    message += `Delivery Details:\n`;
+    message += `Hostel: ${hostel}\n`;
+    message += `Room Number: ${room}\n\n`;
 
     let subtotal = 0;
     shopItems.forEach((item) => {
@@ -86,6 +106,17 @@ export default function CartPage() {
 
     return `https://wa.me/${whatsappNumber.replace("+", "")}?text=${encodeURIComponent(message)}`;
   };
+  
+  // Handler for the individual "Order from" buttons
+  const handleOrderClick = (e, shopItems, sellerId) => {
+    if (!selectedHostel || !roomNumber) {
+      e.preventDefault();
+      showToast("Please enter your delivery details first.");
+    } else {
+      const whatsappLink = generateWhatsAppLink(shopItems, sellerId, selectedHostel, roomNumber);
+      window.open(whatsappLink, '_blank');
+    }
+  };
 
   if (isLoadingSellers) {
     return (
@@ -97,6 +128,29 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen p-6 bg-[#f0f2f5] font-sans">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed z-50 px-6 py-3 text-white transition-all duration-300 ease-in-out transform -translate-x-1/2 bg-gray-900 rounded-full shadow-lg top-5 left-1/2 animate-fade-in-down">
+          {toastMessage}
+        </div>
+      )}
+      
+      <style jsx global>{`
+        @keyframes fade-in-down {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in-down {
+          animation: fade-in-down 0.3s ease-out forwards;
+        }
+      `}</style>
+
       <div className="container max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <Link href="/" className="text-[#181a1f] flex items-center">
@@ -126,6 +180,46 @@ export default function CartPage() {
           </div>
         ) : (
           <div>
+            {/* New Hostel and Room Number Inputs */}
+            <div className="p-6 mb-8 bg-white shadow-md rounded-3xl">
+              <h2 className="pb-3 mb-4 text-2xl font-bold text-[#181a1f] border-b border-gray-100">
+                Delivery Details
+              </h2>
+              <div className="flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
+                <div className="flex-1">
+                  <label htmlFor="hostel" className="block mb-2 font-semibold text-gray-700">
+                    Hostel
+                  </label>
+                  <select
+                    id="hostel"
+                    value={selectedHostel}
+                    onChange={(e) => setSelectedHostel(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2edc86]"
+                  >
+                    <option value="" disabled>Select your hostel</option>
+                    {hostels.map((hostel) => (
+                      <option key={hostel} value={hostel}>
+                        {hostel}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label htmlFor="roomNumber" className="block mb-2 font-semibold text-gray-700">
+                    Room Number
+                  </label>
+                  <input
+                    type="text"
+                    id="roomNumber"
+                    value={roomNumber}
+                    onChange={(e) => setRoomNumber(e.target.value)}
+                    placeholder="e.g., B205"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2edc86]"
+                  />
+                </div>
+              </div>
+            </div>
+
             {Object.keys(groupedItems).map((sellerId) => {
               const shopItems = groupedItems[sellerId];
               const seller = sellersData[sellerId] || { storeName: "Unknown Store", whatsapp: "" };
@@ -207,9 +301,10 @@ export default function CartPage() {
                   </div>
                   <div className="mt-6 text-right">
                     <a
-                      href={generateWhatsAppLink(shopItems, sellerId)}
+                      href="#"
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={(e) => handleOrderClick(e, shopItems, sellerId)}
                       className="inline-block px-8 py-4 text-white transition-all bg-[#2edc86] rounded-full shadow-lg hover:bg-[#4ade80]"
                     >
                       Order from {seller.storeName}
