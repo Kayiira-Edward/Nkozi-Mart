@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaWhatsapp, FaInstagram, FaFacebook, FaXTwitter } from "react-icons/fa6"; // Using react-icons/fa6 for X icon
+import { FaWhatsapp, FaInstagram, FaFacebook, FaXTwitter } from "react-icons/fa6";
 
 export default function Footer() {
   return (
@@ -8,10 +8,12 @@ export default function Footer() {
         <div className="space-y-6">
           {/* Brand */}
           <div>
-            <h2 className="text-xl font-semibold text-[#181a1f]">ShopLink Uganda</h2>
+            <h2 className="text-xl font-semibold text-[#181a1f]">Nkozi Mart</h2>
             <p className="mt-1 text-sm text-gray-600">
-              Discover. Connect. Order — all in one place. Bringing Uganda’s shops closer to you.
-            </p>
+  Your campus essentials, delivered faster — and now, students can sell too! 
+  Connecting buyers and sellers around Uganda Martyrs University, Nkozi.
+</p>
+
           </div>
 
           {/* Links */}
@@ -24,36 +26,32 @@ export default function Footer() {
 
           {/* Contact */}
           <div className="flex justify-center gap-6 mt-4 text-xl">
-            {/* WhatsApp link updated with your number */}
             <a
-              href="https://wa.me/25646838046"
+              href="https://wa.me/256700123456" // Replace with actual WhatsApp business number
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-500 hover:text-[#2edc86]"
             >
               <FaWhatsapp />
             </a>
-            {/* Facebook link added */}
             <a
-              href="https://facebook.com/yourprofile" // Replace 'yourprofile' with your Facebook page link
+              href="https://facebook.com/nkozmart" // Replace with your real FB page
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-500 hover:text-[#2edc86]"
             >
               <FaFacebook />
             </a>
-            {/* Instagram link */}
             <a
-              href="https://instagram.com/yourprofile"
+              href="https://instagram.com/nkozmart" // Replace with your real IG handle
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-500 hover:text-[#2edc86]"
             >
               <FaInstagram />
             </a>
-            {/* X (Twitter) link added */}
             <a
-              href="https://x.com/yourprofile" // Replace 'yourprofile' with your X username
+              href="https://x.com/nkozmart" // Replace with your real X (Twitter) handle
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-500 hover:text-[#2edc86]"
@@ -64,7 +62,7 @@ export default function Footer() {
 
           {/* Copyright */}
           <p className="mt-8 text-xs text-gray-400">
-            © 2025 Hello! All rights reserved.
+            © {new Date().getFullYear()} Nkozi Mart. All rights reserved.
           </p>
         </div>
       </div>
