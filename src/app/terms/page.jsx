@@ -1,4 +1,6 @@
 import React from 'react';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function TermsPage() {
   return (
@@ -49,7 +51,7 @@ export default function TermsPage() {
           </p>
         </section>
 
-        <section className="mb-6">
+        <section>
           <h2 className="mb-3 text-2xl font-semibold text-gray-800">5. Limitation of Liability</h2>
           <p className="leading-relaxed text-gray-700">
             Our platform is a marketplace facilitator and is not responsible for damages or
