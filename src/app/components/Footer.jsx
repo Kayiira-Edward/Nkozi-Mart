@@ -9,7 +9,8 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <h2 className="text-xl font-semibold text-[#181a1f]">Nkozi Mart</h2>
-            <p>Your campus essentials, delivered faster — and now, students can sell too!</p>
+            <p>Your campus essentials, delivered faster — and now, students can sell too!
+               Connecting buyers and sellers around Uganda Martyrs University, Nkozi.</p>
 
 
           </div>
