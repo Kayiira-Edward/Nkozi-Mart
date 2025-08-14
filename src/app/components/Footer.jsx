@@ -9,10 +9,8 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <h2 className="text-xl font-semibold text-[#181a1f]">Nkozi Mart</h2>
-            <p className="mt-1 text-sm text-gray-600">
-  Your campus essentials, delivered faster — and now, students can sell too! 
-  Connecting buyers and sellers around Uganda Martyrs University, Nkozi.
-</p>
+            <p>Your campus essentials, delivered faster — and now, students can sell too!</p>
+
 
           </div>
 
@@ -27,7 +25,7 @@ export default function Footer() {
           {/* Contact */}
           <div className="flex justify-center gap-6 mt-4 text-xl">
             <a
-              href="https://wa.me/256700123456" // Replace with actual WhatsApp business number
+              href="https://whatsapp.com/channel/0029VbBL5lUDTkJup86yPr3w" // Replace with actual WhatsApp business number
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-500 hover:text-[#2edc86]"

@@ -4,6 +4,11 @@ export default function TermsPage() {
   return (
     <main className="min-h-screen p-8 font-sans bg-gray-50">
       <div className="max-w-4xl p-8 mx-auto bg-white shadow-lg rounded-xl">
+        {/* Back Button */}
+        <Link href="/" className="flex items-center text-gray-600 hover:text-[#2edc86] transition-colors mb-6">
+          <ArrowLeft className="mr-2" size={20} />
+          <span>Back to Home</span>
+        </Link>
         <h1 className="mb-6 text-4xl font-extrabold text-gray-900">
           Terms & Conditions
         </h1>
