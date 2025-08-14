@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         {/* Favicon added here */}
-        <link rel="icon" href="/logo.png" type="image/png" sizes="32x32" />
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
         <CartProvider>
