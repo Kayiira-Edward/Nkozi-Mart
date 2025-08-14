@@ -11,6 +11,7 @@ import { useCart } from "./providers/CartProvider";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "./firebase/config.js";
 
+// Updated list of categories
 const categories = [
   "All",
   "Snacks & Beverages",

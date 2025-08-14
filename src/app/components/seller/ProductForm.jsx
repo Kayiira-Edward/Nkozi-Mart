@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,6 +15,20 @@ import LoadingSpinner from "../LoadingSpinner";
 const CLOUDINARY_CLOUD_NAME = 'dzflajft3';
 const CLOUDINARY_UPLOAD_PRESET = 'marketplace_products_upload'; // Replace with your upload preset
 
+// Define a list of categories for the dropdown
+const categories = [
+  'Snacks & Beverages',
+  'Toiletries & Personal Care',
+  'Stationery & Office Supplies',
+  'Electronics & Gadgets',
+  'Groceries & Fresh Produce',
+  'Fashion & Apparel',
+  'Home & Kitchen',
+  'Books & Media',
+  'Health & Wellness',
+  'Other',
+];
+
 export default function ProductForm({ onSubmit, initialData }) {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
@@ -22,6 +37,7 @@ export default function ProductForm({ onSubmit, initialData }) {
   const [previewURL, setPreviewURL] = useState('');
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [category, setCategory] = useState(''); // New state for category
 
   const [toast, setToast] = useState({
     message: '',
@@ -48,12 +64,14 @@ export default function ProductForm({ onSubmit, initialData }) {
       setPrice(initialData.price || '');
       setDescription(initialData.description || '');
       setPreviewURL(initialData.image || '');
+      setCategory(initialData.category || ''); // Set category from initial data
       setImageFile(null);
     } else {
       setName('');
       setPrice('');
       setDescription('');
       setPreviewURL('');
+      setCategory(''); // Reset category for new products
       setImageFile(null);
     }
   }, [initialData]);
@@ -105,9 +123,9 @@ export default function ProductForm({ onSubmit, initialData }) {
     setLoading(true);
     setToast({ ...toast, isVisible: false });
 
-    if (!name || !price) {
+    if (!name || !price || !category) { // Added category validation
       setToast({
-        message: 'Product name and price are required.',
+        message: 'Product name, price, and category are required.',
         type: 'error',
         isVisible: true,
       });
@@ -133,6 +151,7 @@ export default function ProductForm({ onSubmit, initialData }) {
           price: parseFloat(price),
           description,
           image: imageUrl,
+          category, // <-- Added category to the update
           updatedAt: serverTimestamp(),
         });
         setToast({
@@ -161,11 +180,12 @@ export default function ProductForm({ onSubmit, initialData }) {
 
         const productsCollection = collection(db, 'products');
         await addDoc(productsCollection, {
-          sellerId: userId, // <<< THIS IS THE KEY FIELD
+          sellerId: userId,
           name,
           price: parseFloat(price),
           description,
           image: imageUrl,
+          category, // <-- Added category to the new product
           createdAt: serverTimestamp(),
         });
 
@@ -179,6 +199,7 @@ export default function ProductForm({ onSubmit, initialData }) {
         setPrice('');
         setDescription('');
         setPreviewURL('');
+        setCategory(''); // Reset category after adding
         setImageFile(null);
       }
 
@@ -199,8 +220,8 @@ export default function ProductForm({ onSubmit, initialData }) {
   };
 
   return (
-    <div className="relative bg-[#f0f2f5] p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-xl p-6 bg-white shadow-lg rounded-3xl sm:p-8 lg:p-10">
+    <div className="relative bg-[#f0f2f5] p-4 sm:p-6 lg:p-8 min-h-screen flex items-center justify-center">
+      <div className="w-full max-w-xl p-6 bg-white shadow-lg rounded-3xl sm:p-8 lg:p-10 max-h-[95vh] overflow-y-auto">
         <form onSubmit={handleSubmit} className="space-y-6">
           <h2 className="text-3xl font-bold text-center text-gray-800">
             {initialData ? 'Update Product' : 'Add Product'}
@@ -257,6 +278,23 @@ export default function ProductForm({ onSubmit, initialData }) {
                 </div>
               )}
             </div>
+
+            {/* NEW: Category Dropdown */}
+            <div>
+                <label className="block text-sm font-medium text-gray-700">Category</label>
+                <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full p-3 mt-1 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2edc86] bg-white text-gray-800"
+                    required
+                >
+                    <option value="" disabled>Select a category</option>
+                    {categories.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                </select>
+            </div>
+
           </div>
 
           <button
