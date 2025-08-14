@@ -36,7 +36,7 @@ export default function Footer() {
             
             
             <a
-              href="https://x.com/nkozmart" // Replace with your real X (Twitter) handle
+              href="https://x.com/NkoziMart" // Replace with your real X (Twitter) handle
               target="_blank"
               rel="noopener noreferrer"
               className="text-gray-500 hover:text-[#2edc86]"
