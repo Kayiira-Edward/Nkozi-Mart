@@ -34,22 +34,8 @@ export default function Footer() {
             >
               <FaWhatsapp />
             </a>
-            <a
-              href="https://facebook.com/nkozmart" // Replace with your real FB page
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-500 hover:text-[#2edc86]"
-            >
-              <FaFacebook />
-            </a>
-            <a
-              href="https://instagram.com/nkozmart" // Replace with your real IG handle
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-500 hover:text-[#2edc86]"
-            >
-              <FaInstagram />
-            </a>
+            
+            
             <a
               href="https://x.com/nkozmart" // Replace with your real X (Twitter) handle
               target="_blank"
