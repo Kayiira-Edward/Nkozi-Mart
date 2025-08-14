@@ -315,3 +315,4 @@ export default function ProductForm({ onSubmit, initialData }) {
     </div>
   );
 }
+
