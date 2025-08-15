@@ -151,7 +151,7 @@ export default function LoginForm() {
                         </svg>
                     </div>
                     <div className="relative z-10">
-                        <h1 className="mb-4 text-4xl font-extrabold">ShopLink</h1>
+                        <h1 className="mb-4 text-4xl font-extrabold">Nkozi Mart</h1>
                         <p className="mb-6 text-lg">Your local marketplace for amazing products.</p>
                         <p className="text-sm">Join our network of sellers and connect with customers!</p>
                     </div>
