@@ -1,0 +1,22 @@
+{
+    "name": "Nkozi Mart",
+    "short_name": "Nkozi Mart",
+    "description": "Your campus marketplace for all your needs.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2edc86",
+    "icons": [
+      {
+        "src": "/icons/icon1.png",
+        "sizes": "192x192",
+        "type": "image/png"
+      },
+      {
+        "src": "/icons/icon.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+  }
+  
