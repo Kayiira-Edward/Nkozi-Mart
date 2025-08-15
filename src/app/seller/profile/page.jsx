@@ -546,7 +546,7 @@ export default function SellerProfilePage() {
         </div>
       </div>
 
-      <div className="container px-6 mx-auto mt-6">
+      {/* <div className="container px-6 mx-auto mt-6">
         <h2 className="mb-4 text-xl font-bold">Products Listed</h2>
         {products.length > 0 ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -559,7 +559,7 @@ export default function SellerProfilePage() {
             <p>U gat no products listed yet.</p>
           </div>
         )}
-      </div>
+      </div> */}
 
       <Modal isOpen={isProfileEditModalOpen} onClose={() => setIsProfileEditModalOpen(false)}>
         <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-xl">
