@@ -1,5 +1,5 @@
-🛍️ ShopLink — WhatsApp-Powered Local Commerce
-ShopLink is a streamlined, efficient marketplace designed to connect local buyers and sellers directly through WhatsApp. It bypasses the need for traditional e-commerce accounts or integrated payment gateways, making transactions simple, fast, and personal.
+🛍️ NkoziMart — WhatsApp-Powered Local Commerce
+NkoziMart is a streamlined, efficient marketplace designed to connect local buyers and sellers directly through WhatsApp. It bypasses the need for traditional e-commerce accounts or integrated payment gateways, making transactions simple, fast, and personal.
 
 ✨ Key Features
 🛒 Seamless Shopping Experience: Buyers can easily browse products, add them to a virtual cart, and place orders with a few taps.
